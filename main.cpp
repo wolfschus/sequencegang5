@@ -1898,7 +1898,7 @@ int main(int argc, char* argv[])
 			if(mode==1) // Info
 			{
 				SDL_FreeSurface(text);
-				text = TTF_RenderText_Blended(fontbold, "(c) 1986-2020 by Wolfgang Schuster", textColor);
+				text = TTF_RenderText_Blended(fontbold, "(c) 1987-2020 by Wolfgang Schuster", textColor);
 				textPosition.x = screen->w/2-text->w/2;
 				textPosition.y = 2*scorey;
 				SDL_BlitSurface(text, 0, screen, &textPosition);
