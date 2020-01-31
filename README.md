@@ -1,5 +1,8 @@
 # sequencegang5
-A Midi Sequencer for Linux / SDL Arturiastyle
+A Midi Sequencer for Linux / SDL Arturia BeatStepPro style
+
+This is a midi sequencer which runs on a raspberry pi with touch screen.
+Perfect as a supplement to the Arturia BeatStep Pro. Switching the pattern works with the same midi commands.
 
 To use binary:
 
