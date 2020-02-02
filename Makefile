@@ -25,4 +25,3 @@ setup:
 
 install:
 	cp $(TARGET) /usr/local/bin/
-	rm $(TARGET)
