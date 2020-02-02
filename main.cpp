@@ -4,6 +4,7 @@
 // Version     : 0.7 25.01.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux
+// License     : GNU General Public License v3.0
 //============================================================================
 
 #include <iostream>
@@ -106,6 +107,10 @@ char sql[512];
 string songname = "New Song";
 string songnametmp = "New Song";
 int aktsong=0;
+int aktpatt=0;
+int selpatt=0;
+
+bool beatstep = false;
 
 struct cpuwerte{
 	float idle;
@@ -557,6 +562,7 @@ public:
 };
 
 vector <WSButton> load_song;
+vector <WSButton> pattern_aktpatt;
 
 static int settingscallback(void* data, int argc, char** argv, char** azColName)
 {
@@ -603,66 +609,24 @@ void midiincallback( double deltatime, std::vector< unsigned char > *message, vo
 
 	if((int)message->at(0)==176)
 	{
+		if((int)message->at(1)==7)
+		{
+			bpm = 2* (int)message->at(2);
+		}
 		if((int)message->at(1)==114)
 		{
-			if(playmode==0)
-			{
-				nextselpattern[0]=((int)message->at(2))*15/127;
-				selpattern[0]=((int)message->at(2))*15/127;
-			}
-			else
-			{
-				nextselpattern[0]=((int)message->at(2))*15/127;
-			}
 		}
-		if((int)message->at(1)==18)
+	}
+	else if((int)message->at(0)==144)
+	{
+		if((int)message->at(1)>=44 and (int)message->at(1)<=51)
 		{
-			if(playmode==0)
-			{
-				nextselpattern[1]=((int)message->at(2))*15/127;
-				selpattern[1]=((int)message->at(2))*15/127;
-			}
-			else
-			{
-				nextselpattern[1]=((int)message->at(2))*15/127;
-			}
-		}
-		if((int)message->at(1)==19)
+			aktpatt=(int)message->at(1)-44;
+		}		
+		else if((int)message->at(1)>=36 and (int)message->at(1)<=43)
 		{
-			if(playmode==0)
-			{
-				nextselpattern[2]=((int)message->at(2))*15/127;
-				selpattern[2]=((int)message->at(2))*15/127;
-			}
-			else
-			{
-				nextselpattern[2]=((int)message->at(2))*15/127;
-			}
-		}
-		if((int)message->at(1)==16)
-		{
-			if(playmode==0)
-			{
-				nextselpattern[3]=((int)message->at(2))*15/127;
-				selpattern[3]=((int)message->at(2))*15/127;
-			}
-			else
-			{
-				nextselpattern[3]=((int)message->at(2))*15/127;
-			}
-		}
-		if((int)message->at(1)==17)
-		{
-			if(playmode==0)
-			{
-				nextselpattern[4]=((int)message->at(2))*15/127;
-				selpattern[4]=((int)message->at(2))*15/127;
-			}
-			else
-			{
-				nextselpattern[4]=((int)message->at(2))*15/127;
-			}
-		}
+			aktpatt=(int)message->at(1)-28;
+		}		
 	}
 	else if((int)message->at(0)>=192 and (int)message->at(0)<208)
 	{
@@ -784,7 +748,7 @@ int main(int argc, char* argv[])
 		if(string(argv[i])=="--help")
 		{
 			cout << "Sequencegang5" << endl;
-			cout << "(c) 1966 - 2020 by Wolfgang Schuster" << endl;
+			cout << "(c) 1997 - 2020 by Wolfgang Schuster" << endl;
 			cout << "sequencegang5 --fullscreen = fullscreen" << endl;
 			cout << "sequencegang5 --debug = debug" << endl;
 			cout << "sequencegang5 --help = this screen" << endl;
@@ -1235,6 +1199,11 @@ int main(int argc, char* argv[])
 	}
 	for(int i=0;i<5;i++)
 	{
+		WSButton tmp1(6+(6*i),14,2,2,scorex,scorey,NULL,"");
+		pattern_aktpatt.push_back(tmp1);
+	}
+	for(int i=0;i<5;i++)
+	{
 		WSButton tmp1(4+(6*i),14,2,2,scorex,scorey,left_image,"");
 		pattern_down.push_back(tmp1);
 	}
@@ -1633,6 +1602,12 @@ int main(int argc, char* argv[])
 
 				for(int i=0;i<5;i++)
 				{
+					pattern_aktpatt[i].show(screen, fontsmall);
+					if(pattern_aktpatt[i].aktiv==true)
+					{
+						nextselpattern[i]=aktpatt;
+					}
+					
 					SDL_FreeSurface(text);
 					text = TTF_RenderText_Blended(fontsmall, aset[i].name.c_str(), textColor);
 					textPosition.x = 7*scorex+6*i*scorex-text->w/2;
@@ -1655,7 +1630,7 @@ int main(int argc, char* argv[])
 							sprintf(tmp, "%d",nextselpattern[i]+1);
 						}
 					}
-					text = TTF_RenderText_Blended(font, tmp, textColor);
+					text = TTF_RenderText_Blended(fontbold, tmp, blackColor);
 					textPosition.x = 7*scorex+6*i*scorex-text->w/2;
 					textPosition.y = 15*scorey-text->h/2;
 					SDL_BlitSurface(text, 0, screen, &textPosition);
@@ -1901,6 +1876,11 @@ int main(int argc, char* argv[])
 				text = TTF_RenderText_Blended(fontbold, "(c) 1987-2020 by Wolfgang Schuster", textColor);
 				textPosition.x = screen->w/2-text->w/2;
 				textPosition.y = 2*scorey;
+				SDL_BlitSurface(text, 0, screen, &textPosition);
+				SDL_FreeSurface(text);
+				text = TTF_RenderText_Blended(fontsmall, "GNU General Public License v3.0", textColor);
+				textPosition.x = screen->w/2-text->w/2;
+				textPosition.y = 3*scorey;
 				SDL_BlitSurface(text, 0, screen, &textPosition);
 
 				int i = 0;
@@ -2493,6 +2473,26 @@ int main(int argc, char* argv[])
 							}
 							for(int i=0;i<5;i++)
 							{
+								if(CheckMouse(mousex, mousey, pattern_aktpatt[i].button_rect)==true)
+								{
+									if(pattern_aktpatt[i].aktiv==true)
+									{
+										for(int i=0;i<5;i++)
+										{
+											pattern_aktpatt[i].aktiv=false;
+										}
+									}
+									else
+									{
+										for(int i=0;i<5;i++)
+										{
+											pattern_aktpatt[i].aktiv=false;
+										}
+										pattern_aktpatt[i].aktiv=true;
+										aktpatt=selpattern[i];
+									}
+
+								}
 								if(CheckMouse(mousex, mousey, pattern_up[i].button_rect)==true)
 								{
 									pattern_up[i].aktiv=true;
