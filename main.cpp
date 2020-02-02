@@ -109,6 +109,7 @@ string songnametmp = "New Song";
 int aktsong=0;
 int aktpatt=0;
 int selpatt=0;
+int oldselpatt=0;
 
 bool beatstep = false;
 
@@ -615,6 +616,17 @@ void midiincallback( double deltatime, std::vector< unsigned char > *message, vo
 		}
 		if((int)message->at(1)==114)
 		{
+			oldselpatt=selpatt;
+			cout << ((int)message->at(2)-65)/3 << endl;
+			for(int i=0;i<5;i++)
+			{
+				pattern_aktpatt[i].aktiv=false;
+			}
+			if((int)message->at(2)>64 and (int)message->at(2)<79)
+			{
+					aktpatt=selpattern[((int)message->at(2)-65)/3];
+					pattern_aktpatt[((int)message->at(2)-65)/3].aktiv=true;
+			}
 		}
 	}
 	else if((int)message->at(0)==144)
@@ -2475,6 +2487,7 @@ int main(int argc, char* argv[])
 							{
 								if(CheckMouse(mousex, mousey, pattern_aktpatt[i].button_rect)==true)
 								{
+									oldselpatt=selpatt;
 									if(pattern_aktpatt[i].aktiv==true)
 									{
 										for(int i=0;i<5;i++)
@@ -2490,6 +2503,7 @@ int main(int argc, char* argv[])
 										}
 										pattern_aktpatt[i].aktiv=true;
 										aktpatt=selpattern[i];
+										selpatt=i;
 									}
 
 								}
