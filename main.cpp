@@ -602,7 +602,7 @@ void midiincallback( double deltatime, std::vector< unsigned char > *message, vo
 {
 	unsigned int nBytes = message->size();
 
-	for(int i=0;i<nBytes;i++)
+	for(unsigned int i=0;i<nBytes;i++)
 	{
 		cout << (int)message->at(i) << " ";
 	}
@@ -626,6 +626,8 @@ void midiincallback( double deltatime, std::vector< unsigned char > *message, vo
 			{
 					aktpatt=selpattern[((int)message->at(2)-65)/3];
 					pattern_aktpatt[((int)message->at(2)-65)/3].aktiv=true;
+					aktpatt=selpattern[((int)message->at(2)-65)/3];
+					selpatt=((int)message->at(2)-65)/3;
 			}
 		}
 	}
@@ -883,7 +885,7 @@ int main(int argc, char* argv[])
     }
 
 // GM Instruments
-	vector<char *> gm_program_name;
+	vector<char const *> gm_program_name;
 	gm_program_name.push_back("Acoustic Piano");
 	gm_program_name.push_back("Bright Piano");
 	gm_program_name.push_back("Electric Grand Piano");
@@ -1014,7 +1016,7 @@ int main(int argc, char* argv[])
 	gm_program_name.push_back("Gunshot");
 
 // GM Drums
-	vector<char *> gm_drum_name;
+	vector<char const *> gm_drum_name;
 	gm_drum_name.push_back("Bass Drum 2");
 	gm_drum_name.push_back("Bass Drum 1");
 	gm_drum_name.push_back("Side Stick");
@@ -1615,11 +1617,7 @@ int main(int argc, char* argv[])
 				for(int i=0;i<5;i++)
 				{
 					pattern_aktpatt[i].show(screen, fontsmall);
-					if(pattern_aktpatt[i].aktiv==true)
-					{
-						nextselpattern[i]=aktpatt;
-					}
-					
+
 					SDL_FreeSurface(text);
 					text = TTF_RenderText_Blended(fontsmall, aset[i].name.c_str(), textColor);
 					textPosition.x = 7*scorex+6*i*scorex-text->w/2;
@@ -2487,7 +2485,6 @@ int main(int argc, char* argv[])
 							{
 								if(CheckMouse(mousex, mousey, pattern_aktpatt[i].button_rect)==true)
 								{
-									oldselpatt=selpatt;
 									if(pattern_aktpatt[i].aktiv==true)
 									{
 										for(int i=0;i<5;i++)
