@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <algorithm>
 #include <sys/sysinfo.h>
+#include <sys/time.h>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -112,6 +113,7 @@ int selpatt=0;
 int oldselpatt=0;
 
 bool beatstep = false;
+timeval start, stop;
 
 struct cpuwerte{
 	float idle;
@@ -322,14 +324,18 @@ public:
 
 	void NextTick()
 	{
-	  oldmiditick=miditick;
-	  if(miditick<5)
-	  {
-		  miditick++;
-	  }
-	  else
-	  {
-		  miditick=0;
+		oldmiditick=miditick;
+		if(miditick<5)
+		{
+			miditick++;
+		}
+		else
+		{
+			stop.tv_sec = start.tv_sec;
+			stop.tv_usec = start.tv_usec;
+			gettimeofday(&start,0);
+			cout << ((start.tv_sec-stop.tv_sec)*1000000+start.tv_usec-stop.tv_usec)*4 << endl;
+			miditick=0;
 		  oldstep=aktstep;
 		  aktstep++;
 		  if(aktstep>maxstep)
