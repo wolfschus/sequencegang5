@@ -1153,36 +1153,36 @@ int main(int argc, char* argv[])
 	selsetmidichannelRect.y = 4.5*scorey;
 	selsetmidichannelRect.w = 6*scorex;
 	selsetmidichannelRect.h = 12*scorey;
-	int selsetminprog = 1;
+	int selsetminprog = 0;
 	SDL_Rect selsetminprogRect;
 	selsetminprogRect.x = 7*scorex;
 	selsetminprogRect.y = 4.5*scorey;
 	selsetminprogRect.w = 4*scorex;
-	selsetminprogRect.h = 12*scorey;
-	int selsetmaxprog = 1;
+	selsetminprogRect.h = 10*scorey;
+	int selsetmaxprog = 0;
 	SDL_Rect selsetmaxprogRect;
 	selsetmaxprogRect.x = 13*scorex;
 	selsetmaxprogRect.y = 4.5*scorey;
 	selsetmaxprogRect.w = 4*scorex;
-	selsetmaxprogRect.h = 12*scorey;
-	int selsetminbank = 1;
+	selsetmaxprogRect.h = 10*scorey;
+	int selsetminbank = 0;
 	SDL_Rect selsetminbankRect;
 	selsetminbankRect.x = 19*scorex;
 	selsetminbankRect.y = 4.5*scorey;
 	selsetminbankRect.w = 4*scorex;
-	selsetminbankRect.h = 12*scorey;
-	int selsetmaxbank = 1;
+	selsetminbankRect.h = 10*scorey;
+	int selsetmaxbank = 0;
 	SDL_Rect selsetmaxbankRect;
 	selsetmaxbankRect.x = 25*scorex;
 	selsetmaxbankRect.y = 4.5*scorey;
 	selsetmaxbankRect.w = 4*scorex;
-	selsetmaxbankRect.h = 12*scorey;
-	int selsetmidiinch = 1;
+	selsetmaxbankRect.h = 10*scorey;
+	int selsetmidiinch = 0;
 	SDL_Rect selsetmidiinchRect;
 	selsetmidiinchRect.x = 31*scorex;
 	selsetmidiinchRect.y = 4.5*scorey;
 	selsetmidiinchRect.w = 4*scorex;
-	selsetmidiinchRect.h = 12*scorey;
+	selsetmidiinchRect.h = 10*scorey;
 
 	char keyboard_letters[40][2] = {"1","2","3","4","5","6","7","8","9","0","q","w","e","r","t","z","u","i","o","p","a","s","d","f","g","h","j","k","l","+","y","x","c","v","b","n","m",",",".","-"};
 	char shkeyboard_letters[40][2] = {"1","2","3","4","5","6","7","8","9","0","Q","W","E","R","T","Z","U","I","O","P","A","S","D","F","G","H","J","K","L","*","Y","X","C","V","B","N","M",";",":","_"};
@@ -3001,7 +3001,7 @@ int main(int argc, char* argv[])
 									cout << "Save Settings" << endl;
 
 									sprintf(dbpath, "%s/.sequencegang5/settings.db", getenv("HOME"));
-									if(sqlite3_open("settings.db", &settingsdb) != SQLITE_OK)
+									if(sqlite3_open(dbpath, &settingsdb) != SQLITE_OK)
 									{
 										cout << "Fehler beim Öffnen: " << sqlite3_errmsg(settingsdb) << endl;
 										return 1;
@@ -3177,6 +3177,38 @@ int main(int argc, char* argv[])
 									selsetmaxbank=0;
 									selsetmidiinch=0;
 								}
+								else if(CheckMouse(mousex, mousey, selsetmaxprogRect)==true)
+								{
+									selsetmaxprog=(mousey-selsetmaxprogRect.y)/scorey/2+1;
+									selsetminprog=0;
+									selsetminbank=0;
+									selsetmaxbank=0;
+									selsetmidiinch=0;
+								}
+								else if(CheckMouse(mousex, mousey, selsetminbankRect)==true)
+								{
+									selsetminbank=(mousey-selsetminbankRect.y)/scorey/2+1;
+									selsetminprog=0;
+									selsetmaxprog=0;
+									selsetmaxbank=0;
+									selsetmidiinch=0;
+								}
+								else if(CheckMouse(mousex, mousey, selsetmaxbankRect)==true)
+								{
+									selsetmaxbank=(mousey-selsetmaxbankRect.y)/scorey/2+1;
+									selsetminprog=0;
+									selsetmaxprog=0;
+									selsetminbank=0;
+									selsetmidiinch=0;
+								}
+								else if(CheckMouse(mousex, mousey, selsetmidiinchRect)==true)
+								{
+									selsetmidiinch=(mousey-selsetmidiinchRect.y)/scorey/2+1;
+									selsetminprog=0;
+									selsetmaxprog=0;
+									selsetminbank=0;
+									selsetmaxbank=0;
+								}
 								else if(CheckMouse(mousex, mousey, settings_up.button_rect)==true)
 								{
 									settings_up.aktiv=true;
@@ -3184,14 +3216,85 @@ int main(int argc, char* argv[])
 									{
 										if(aset[selsetminprog-1].minprog<127)
 										{
-											aset[selsetmididevice-1].minprog++;
+											aset[selsetminprog-1].minprog++;
 											changesettings=true;
 										}
-//										else if(aset[selsetmididevice-1].mididevice<midiout->getPortCount()-1)
-//										{
-//											aset[selsetmididevice-1].mididevice++;
-//											changesettings=true;
-//										}
+									}
+									if(selsetmaxprog>0) 
+									{
+										if(aset[selsetmaxprog-1].maxprog<127)
+										{
+											aset[selsetmaxprog-1].maxprog++;
+											changesettings=true;
+										}
+									}
+									if(selsetminbank>0) 
+									{
+										if(aset[selsetminbank-1].minbank<15)
+										{
+											aset[selsetminbank-1].minbank++;
+											changesettings=true;
+										}
+									}
+									if(selsetmaxbank>0) 
+									{
+										if(aset[selsetmaxbank-1].maxbank<15)
+										{
+											aset[selsetmaxbank-1].maxbank++;
+											changesettings=true;
+										}
+									}
+									if(selsetmidiinch>0) 
+									{
+										if(aset[selsetmidiinch-1].midiinchannel<15)
+										{
+											aset[selsetmidiinch-1].midiinchannel++;
+											changesettings=true;
+										}
+									}
+								}
+								else if(CheckMouse(mousex, mousey, settings_down.button_rect)==true)
+								{
+									settings_down.aktiv=true;
+									if(selsetminprog>0) 
+									{
+										if(aset[selsetminprog-1].minprog>0)
+										{
+											aset[selsetminprog-1].minprog--;
+											changesettings=true;
+										}
+									}
+									if(selsetmaxprog>0) 
+									{
+										if(aset[selsetmaxprog-1].maxprog>0)
+										{
+											aset[selsetmaxprog-1].maxprog--;
+											changesettings=true;
+										}
+									}
+									if(selsetminbank>0) 
+									{
+										if(aset[selsetminbank-1].minbank>0)
+										{
+											aset[selsetminbank-1].minbank--;
+											changesettings=true;
+										}
+									}
+									if(selsetmaxbank>0) 
+									{
+										if(aset[selsetmaxbank-1].maxbank>0)
+										{
+											aset[selsetmaxbank-1].maxbank--;
+											changesettings=true;
+										}
+									}
+									if(selsetmidiinch>0) 
+									{
+										if(aset[selsetmidiinch-1].midiinchannel>0)
+										{
+											aset[selsetmidiinch-1].midiinchannel--;
+											changesettings=true;
+										}
 									}
 								}
 							}
