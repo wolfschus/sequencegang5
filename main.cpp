@@ -1153,6 +1153,36 @@ int main(int argc, char* argv[])
 	selsetmidichannelRect.y = 4.5*scorey;
 	selsetmidichannelRect.w = 6*scorex;
 	selsetmidichannelRect.h = 12*scorey;
+	int selsetminprog = 1;
+	SDL_Rect selsetminprogRect;
+	selsetminprogRect.x = 7*scorex;
+	selsetminprogRect.y = 4.5*scorey;
+	selsetminprogRect.w = 4*scorex;
+	selsetminprogRect.h = 12*scorey;
+	int selsetmaxprog = 1;
+	SDL_Rect selsetmaxprogRect;
+	selsetmaxprogRect.x = 13*scorex;
+	selsetmaxprogRect.y = 4.5*scorey;
+	selsetmaxprogRect.w = 4*scorex;
+	selsetmaxprogRect.h = 12*scorey;
+	int selsetminbank = 1;
+	SDL_Rect selsetminbankRect;
+	selsetminbankRect.x = 19*scorex;
+	selsetminbankRect.y = 4.5*scorey;
+	selsetminbankRect.w = 4*scorex;
+	selsetminbankRect.h = 12*scorey;
+	int selsetmaxbank = 1;
+	SDL_Rect selsetmaxbankRect;
+	selsetmaxbankRect.x = 25*scorex;
+	selsetmaxbankRect.y = 4.5*scorey;
+	selsetmaxbankRect.w = 4*scorex;
+	selsetmaxbankRect.h = 12*scorey;
+	int selsetmidiinch = 1;
+	SDL_Rect selsetmidiinchRect;
+	selsetmidiinchRect.x = 31*scorex;
+	selsetmidiinchRect.y = 4.5*scorey;
+	selsetmidiinchRect.w = 4*scorex;
+	selsetmidiinchRect.h = 12*scorey;
 
 	char keyboard_letters[40][2] = {"1","2","3","4","5","6","7","8","9","0","q","w","e","r","t","z","u","i","o","p","a","s","d","f","g","h","j","k","l","+","y","x","c","v","b","n","m",",",".","-"};
 	char shkeyboard_letters[40][2] = {"1","2","3","4","5","6","7","8","9","0","Q","W","E","R","T","Z","U","I","O","P","A","S","D","F","G","H","J","K","L","*","Y","X","C","V","B","N","M",";",":","_"};
@@ -2077,30 +2107,50 @@ int main(int argc, char* argv[])
 				}
 				else if (settingsmode==1)
 				{
+					if(selsetminprog>0)
+					{
+						boxColor(screen, selsetminprogRect.x,selsetminprogRect.y+2*(selsetminprog-1)*scorey,selsetminprogRect.x+selsetminprogRect.w,selsetminprogRect.y+2*selsetminprog*scorey,0x4F4F4FFF);
+					}
 					SDL_FreeSurface(text);
 					text = TTF_RenderText_Blended(font, "min Prog", textColor);
 					textPosition.x = 7*scorex;
 					textPosition.y = 3*scorey;
 					SDL_BlitSurface(text, 0, screen, &textPosition);
 
+					if(selsetmaxprog>0)
+					{
+						boxColor(screen, selsetmaxprogRect.x,selsetmaxprogRect.y+2*(selsetmaxprog-1)*scorey,selsetmaxprogRect.x+selsetmaxprogRect.w,selsetmaxprogRect.y+2*selsetmaxprog*scorey,0x4F4F4FFF);
+					}
 					SDL_FreeSurface(text);
 					text = TTF_RenderText_Blended(font, "max Prog", textColor);
 					textPosition.x = 13*scorex;
 					textPosition.y = 3*scorey;
 					SDL_BlitSurface(text, 0, screen, &textPosition);
 
+					if(selsetminbank>0)
+					{
+						boxColor(screen, selsetminbankRect.x,selsetminbankRect.y+2*(selsetminbank-1)*scorey,selsetminbankRect.x+selsetminbankRect.w,selsetminbankRect.y+2*selsetminbank*scorey,0x4F4F4FFF);
+					}
 					SDL_FreeSurface(text);
 					text = TTF_RenderText_Blended(font, "min Bank", textColor);
 					textPosition.x = 19*scorex;
 					textPosition.y = 3*scorey;
 					SDL_BlitSurface(text, 0, screen, &textPosition);
 
+					if(selsetmaxbank>0)
+					{
+						boxColor(screen, selsetmaxbankRect.x,selsetmaxbankRect.y+2*(selsetmaxbank-1)*scorey,selsetmaxbankRect.x+selsetmaxbankRect.w,selsetmaxbankRect.y+2*selsetmaxbank*scorey,0x4F4F4FFF);
+					}
 					SDL_FreeSurface(text);
 					text = TTF_RenderText_Blended(font, "max Bank", textColor);
 					textPosition.x = 25*scorex;
 					textPosition.y = 3*scorey;
 					SDL_BlitSurface(text, 0, screen, &textPosition);
 
+					if(selsetmidiinch>0)
+					{
+						boxColor(screen, selsetmidiinchRect.x,selsetmidiinchRect.y+2*(selsetmidiinch-1)*scorey,selsetmidiinchRect.x+selsetmidiinchRect.w,selsetmidiinchRect.y+2*selsetmidiinch*scorey,0x4F4F4FFF);
+					}
 					SDL_FreeSurface(text);
 					text = TTF_RenderText_Blended(font, "MIDI In Ch", textColor);
 					textPosition.x = 31*scorex;
@@ -3030,6 +3080,11 @@ int main(int argc, char* argv[])
 									settingsmode=1;
 									selsetmidichannel=0;
 									selsetmididevice=0;
+									selsetminprog=0;
+									selsetmaxprog=0;
+									selsetminbank=0;
+									selsetmaxbank=0;
+									selsetmidiinch=0;
 								}
 								else if(CheckMouse(mousex, mousey, selsetmidideviceRect)==true)
 								{
@@ -3106,6 +3161,38 @@ int main(int argc, char* argv[])
 								if(CheckMouse(mousex, mousey, settings_prev.button_rect)==true)
 								{
 									settingsmode=0;
+									selsetmidichannel=0;
+									selsetmididevice=0;
+									selsetminprog=0;
+									selsetmaxprog=0;
+									selsetminbank=0;
+									selsetmaxbank=0;
+									selsetmidiinch=0;
+								}
+								else if(CheckMouse(mousex, mousey, selsetminprogRect)==true)
+								{
+									selsetminprog=(mousey-selsetminprogRect.y)/scorey/2+1;
+									selsetmaxprog=0;
+									selsetminbank=0;
+									selsetmaxbank=0;
+									selsetmidiinch=0;
+								}
+								else if(CheckMouse(mousex, mousey, settings_up.button_rect)==true)
+								{
+									settings_up.aktiv=true;
+									if(selsetminprog>0) 
+									{
+										if(aset[selsetminprog-1].minprog<127)
+										{
+											aset[selsetmididevice-1].minprog++;
+											changesettings=true;
+										}
+//										else if(aset[selsetmididevice-1].mididevice<midiout->getPortCount()-1)
+//										{
+//											aset[selsetmididevice-1].mididevice++;
+//											changesettings=true;
+//										}
+									}
 								}
 							}
 			        	}
