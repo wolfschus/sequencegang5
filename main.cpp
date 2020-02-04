@@ -112,7 +112,12 @@ int aktpatt=0;
 int selpatt=0;
 int oldselpatt=0;
 
-bool beatstep = false;
+int beatstep_in = -1;
+int vmpk_in = -1;
+int launchpad_in=-1;
+int beatstep_out = -1;
+int launchpad_out=-1;
+
 timeval start, stop;
 
 struct cpuwerte{
@@ -132,6 +137,87 @@ fluid_synth_t* fluid_synth;
 
 RtMidiOut *midiout = new RtMidiOut();
 RtMidiIn *midiin = new RtMidiIn();
+
+class Launchpad
+{
+public:
+	void LPInit()
+	{
+		LPTest();
+		sleep(1);
+		LPReset();
+//		sleep(1);
+//		LPSetMode("drum");		
+		return;
+	}
+	
+	void LPReset()
+	{
+		vector<unsigned char> message;
+		midiout->openPort(launchpad_out);
+		message.clear();
+		message.push_back(176);
+		message.push_back(0);
+		message.push_back(0);
+		midiout->sendMessage( &message );
+		midiout->closePort();
+	}
+
+	void LPTest()
+	{
+		vector<unsigned char> message;
+		midiout->openPort(launchpad_out);
+		message.clear();
+		message.push_back(176);
+		message.push_back(0);
+		message.push_back(127);
+		midiout->sendMessage( &message );
+		midiout->closePort();
+	}
+
+	void LPPad(int pad, string color)
+	{
+		vector<unsigned char> message;
+		midiout->openPort(launchpad_out);
+		message.clear();
+		message.push_back(144);
+		message.push_back(pad);
+		if(color=="red")
+		{
+			message.push_back(15);
+		}
+		else
+		{
+			message.push_back(0);
+		}
+		
+		midiout->sendMessage( &message );
+		midiout->closePort();
+	}
+
+	void LPSetMode(string mode)
+	{
+		vector<unsigned char> message;
+		midiout->openPort(launchpad_out);
+		message.clear();
+		message.push_back(176);
+		message.push_back(0);
+		if(mode=="drum")
+		{
+			message.push_back(2);
+		}
+		else
+		{
+			message.push_back(1);
+		}
+		
+		midiout->sendMessage( &message );
+		midiout->closePort();
+	}
+	
+};
+
+Launchpad launchpad;
 
 class WSMidi
 {
@@ -320,6 +406,17 @@ public:
 		{
 			AllNotesOff(aset[i].mididevice,aset[i].midichannel);
 		}
+		if(launchpad_out>-1)
+		{
+			if(oldstep<9)
+			{
+				launchpad.LPPad(oldstep-1,"off");
+			}
+			else
+			{
+				launchpad.LPPad(oldstep+7,"off");
+			}
+		}
 	}
 
 	void NextTick()
@@ -338,6 +435,27 @@ public:
 			miditick=0;
 		  oldstep=aktstep;
 		  aktstep++;
+/*			if(launchpad_out>-1)
+			{
+				if(oldstep<9)
+				{
+					launchpad.LPPad(oldstep-1,"off");
+				}
+				else
+				{
+					launchpad.LPPad(oldstep+7,"off");
+				}
+				if(aktstep<9)
+				{
+					launchpad.LPPad(aktstep-1,"red");
+				}
+				else
+				{
+					launchpad.LPPad(aktstep+7,"red");
+				}
+			}
+*/			
+
 		  if(aktstep>maxstep)
 		  {
 			  aktstep=0;
@@ -616,37 +734,57 @@ void midiincallback( double deltatime, std::vector< unsigned char > *message, vo
 
 	if((int)message->at(0)==176)
 	{
-		if((int)message->at(1)==7)
+		if(beatstep_in>-1)
 		{
-			bpm = 2* (int)message->at(2);
-		}
-		if((int)message->at(1)==114)
-		{
-			oldselpatt=selpatt;
-			cout << ((int)message->at(2)-65)/3 << endl;
-			for(int i=0;i<5;i++)
+			if((int)message->at(1)==7)
 			{
-				pattern_aktpatt[i].aktiv=false;
+				bpm = 2* (int)message->at(2);
 			}
-			if((int)message->at(2)>64 and (int)message->at(2)<79)
+			if((int)message->at(1)==114)
 			{
-					aktpatt=selpattern[((int)message->at(2)-65)/3];
-					pattern_aktpatt[((int)message->at(2)-65)/3].aktiv=true;
-					aktpatt=selpattern[((int)message->at(2)-65)/3];
-					selpatt=((int)message->at(2)-65)/3;
+				for(int i=0;i<5;i++)
+				{
+					pattern_aktpatt[i].aktiv=false;
+				}
+				if((int)message->at(2)>64 and (int)message->at(2)<79)
+				{
+						aktpatt=selpattern[((int)message->at(2)-65)/3];
+						pattern_aktpatt[((int)message->at(2)-65)/3].aktiv=true;
+						aktpatt=selpattern[((int)message->at(2)-65)/3];
+						selpatt=((int)message->at(2)-65)/3;
+				}
 			}
 		}
 	}
 	else if((int)message->at(0)==144)
 	{
-		if((int)message->at(1)>=44 and (int)message->at(1)<=51)
+		if(beatstep_in>-1)
 		{
-			aktpatt=(int)message->at(1)-44;
-		}		
-		else if((int)message->at(1)>=36 and (int)message->at(1)<=43)
-		{
-			aktpatt=(int)message->at(1)-28;
-		}		
+			if((int)message->at(1)>=44 and (int)message->at(1)<=51)
+			{
+				if(pattern_aktpatt[selpatt].aktiv==true)
+				{
+					cout << selpatt << endl;
+					nextselpattern[selpatt]=(int)message->at(1)-44;
+					if(playmode==0)
+					{
+						selpattern[selpatt]=nextselpattern[selpatt];
+					}
+				}
+			}		
+			else if((int)message->at(1)>=36 and (int)message->at(1)<=43)
+			{
+				if(pattern_aktpatt[selpatt].aktiv==true)
+				{
+					cout << selpatt << endl;
+					nextselpattern[selpatt]=(int)message->at(1)-28;
+				}
+				if(playmode==0)
+				{
+					selpattern[selpatt]=nextselpattern[selpatt];
+				}
+			}
+		}	
 	}
 	else if((int)message->at(0)>=192 and (int)message->at(0)<208)
 	{
@@ -1345,6 +1483,7 @@ int main(int argc, char* argv[])
 	message.push_back(0);
 
 	vector<string> midioutname;
+	size_t found;
 
 	// Check available Midi Out ports.
 	cout << "Midi Out" << endl;
@@ -1358,7 +1497,17 @@ int main(int argc, char* argv[])
 		for(int i=0;i<onPorts;i++)
 		{
 			midioutname.push_back(midiout->getPortName(i));
+			found = midiout->getPortName(i).find(":");
 			cout << i << ": " << midiout->getPortName(i) << endl;
+			cout << midiout->getPortName(i).substr(0,found) << endl;
+			if(midiout->getPortName(i).substr(0,found)=="Arturia BeatStep")
+			{
+				beatstep_out=i;
+			}
+			if(midiout->getPortName(i).substr(0,found)=="Launchpad")
+			{
+				launchpad_out=i;
+			}
 		}
 	}
 
@@ -1376,8 +1525,22 @@ int main(int argc, char* argv[])
 		for(int i=0;i<inPorts;i++)
 		{
 			midiinname.push_back(midiin->getPortName(i));
+			found = midiin->getPortName(i).find(":");
+			
 			cout << i << ": " << midiin->getPortName(i) << endl;
-			cout << midiin->getPortName(i).substr(0,12) << endl;
+			cout << midiin->getPortName(i).substr(0,found) << endl;
+			if(midiin->getPortName(i).substr(0,found)=="Arturia BeatStep")
+			{
+				beatstep_in=i;
+			}
+			if(midiin->getPortName(i).substr(0,found)=="Launchpad")
+			{
+				launchpad_in=i;
+			}
+			if(midiin->getPortName(i).substr(0,found)=="VMPK Output")
+			{
+				vmpk_in=i;
+			}
 		}
 	}
 
@@ -1388,6 +1551,12 @@ int main(int argc, char* argv[])
 		midiin->setCallback( &midiincallback );
 		// Don't ignore sysex, timing, or active sensing messages.
 		midiin->ignoreTypes( false, false, false );
+	}
+
+// Launchpad
+	if(launchpad_out>-1)
+	{
+		launchpad.LPInit();
 	}
 
 	while(run)
