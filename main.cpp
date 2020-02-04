@@ -768,7 +768,7 @@ int main(int argc, char* argv[])
 		if(string(argv[i])=="--help")
 		{
 			cout << "Sequencegang5" << endl;
-			cout << "(c) 1997 - 2020 by Wolfgang Schuster" << endl;
+			cout << "(c) 1987 - 2020 by Wolfgang Schuster" << endl;
 			cout << "sequencegang5 --fullscreen = fullscreen" << endl;
 			cout << "sequencegang5 --debug = debug" << endl;
 			cout << "sequencegang5 --help = this screen" << endl;
@@ -872,6 +872,7 @@ int main(int argc, char* argv[])
     fluid_settings_setint(fluid_settings, "synth.polyphony", 128);
     fluid_synth = new_fluid_synth(fluid_settings);
     fluid_settings_setstr(fluid_settings, "audio.driver", "alsa");
+    fluid_settings_setint(fluid_settings, "audio.period-size", 512);
     adriver = new_fluid_audio_driver(fluid_settings, fluid_synth);
     sf2id = fluid_synth_sfload(fluid_synth,"/usr/share/sounds/sf2/FluidR3_GM.sf2",true);
     fluid_synth_program_change(fluid_synth, 0 , 0);
@@ -1346,6 +1347,7 @@ int main(int argc, char* argv[])
 		{
 			midiinname.push_back(midiin->getPortName(i));
 			cout << i << ": " << midiin->getPortName(i) << endl;
+			cout << midiin->getPortName(i).substr(0,12) << endl;
 		}
 	}
 
