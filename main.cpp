@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 0.7 25.01.2020
+// Version     : 0.8 06.02.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux
 // License     : GNU General Public License v3.0
