@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 0.8 06.02.2020
+// Version     : 0.9 09.02.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux
 // License     : GNU General Public License v3.0
@@ -1457,7 +1457,7 @@ int main(int argc, char* argv[])
 	WSButton key_space(12,16,12,2,scorex,scorey,NULL,"Space");
 	WSButton key_backspace(26,16,2,2,scorex,scorey,left_image,"");
 
-	char note[12][3] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "B", "C"};
+	char note[12][3] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "B", "H"};
 
 	Clearpattern();
 
