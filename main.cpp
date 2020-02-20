@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 0.9 09.02.2020
+// Version     : 0.91 20.02.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux
 // License     : GNU General Public License v3.0
@@ -137,6 +137,8 @@ fluid_synth_t* fluid_synth;
 
 RtMidiOut *midiout = new RtMidiOut();
 RtMidiIn *midiin = new RtMidiIn();
+
+SDL_Event CPUevent;
 
 class Launchpad
 {
@@ -431,7 +433,7 @@ public:
 			stop.tv_sec = start.tv_sec;
 			stop.tv_usec = start.tv_usec;
 			gettimeofday(&start,0);
-			cout << ((start.tv_sec-stop.tv_sec)*1000000+start.tv_usec-stop.tv_usec)*4 << endl;
+//			cout << ((start.tv_sec-stop.tv_sec)*1000000+start.tv_usec-stop.tv_usec)*4 << endl;
 			miditick=0;
 		  oldstep=aktstep;
 		  aktstep++;
@@ -566,7 +568,8 @@ public:
    {
       while(1)
 	  {
-    	  usleep(200000);
+    	  usleep(20000);
+    	  SDL_PushEvent(&CPUevent);
     	  oldcpu.idle=newcpu.idle;
     	  oldcpu.usage=newcpu.usage;
     	  newcpu=get_cpuusage();
@@ -1559,9 +1562,10 @@ int main(int argc, char* argv[])
 		launchpad.LPInit();
 	}
 
+	anzeige=true;
 	while(run)
 	{
-		if(oldstep!=aktstep)
+		if(oldstep!=aktstep and playmode==1)
 		{
 			anzeige=true;
 		}
@@ -2518,7 +2522,7 @@ int main(int argc, char* argv[])
 
 		// Wir holen uns so lange neue Ereignisse, bis es keine mehr gibt.
 		SDL_Event event;
-		while(SDL_PollEvent(&event))
+		if(SDL_WaitEvent(&event)!=0)
 		{
 			// Was ist passiert?
 			switch(event.type)
