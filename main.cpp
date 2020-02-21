@@ -735,6 +735,8 @@ void midiincallback( double deltatime, std::vector< unsigned char > *message, vo
 	}
 	cout << endl;
 
+	SDL_PushEvent(&CPUevent);
+
 	if((int)message->at(0)==176)
 	{
 		if(beatstep_in>-1)
