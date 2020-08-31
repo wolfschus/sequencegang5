@@ -10,7 +10,7 @@ OBJECTS = main.o
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
-	$(CXX) -o $@ $(CXXFLAGS) $(LDFLAGS) $(OBJECTS)
+	$(CXX)  $(OBJECTS) -o $@ $(CXXFLAGS) $(LDFLAGS)
 
 .cpp.o:
 	$(CXX) -c $< $(CXXFLAGS)
