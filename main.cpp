@@ -1,9 +1,9 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 0.91 20.02.2020
+// Version     : 0.94 31.08.2020
 // Copyright   : Wolfgang Schuster
-// Description : MIDI-Sequencer for Linux
+// Description : MIDI-Sequencer for Linux/Raspberry PI
 // License     : GNU General Public License v3.0
 //============================================================================
 
@@ -26,7 +26,6 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include <fluidsynth.h>
 
 
 #include "images/media-playback-start.xpm"
@@ -54,12 +53,16 @@
 #include "images/plug.xpm"
 #include "images/songs.xpm"
 #include "images/pattern.xpm"
+#include "images/monitor.xpm"
+#include "images/plus.xpm"
+#include "images/minus.xpm"
 
 using namespace std;
 
 char cstring[512];
 char playmode = 0;
-char pattern[5][16][16][5][3];
+char pattern[10][16][16][5][3];
+int songpatt[11][256];
 
 struct seqsettings{
 	string name;
@@ -87,6 +90,7 @@ struct songsettings{
 vector <songsettings> songset;
 
 int aktstep=15;
+int aktsongstep=0;
 int oldstep=0;
 int miditick=0;
 int oldmiditick=0;
@@ -97,8 +101,10 @@ float bpmcorrect=1.00;
 bool timerrun=false;
 bool clockmodeext=false;
 bool exttimerrun = false;
+bool playsong = false;
+int seite = 0;
 int mode = 0;
-int submode = 0;
+int submode = 2;
 int settingsmode = 0;
 int selpattdevice = 0;
 int selpattern[5] = {0,0,0,0,0};
@@ -131,9 +137,6 @@ float cpuusage;
 int anzahlcpu;
 int cputimer = 0;
 struct sysinfo memInfo;
-
-// Fluidsynth
-fluid_synth_t* fluid_synth;
 
 RtMidiOut *midiout = new RtMidiOut();
 RtMidiIn *midiin = new RtMidiIn();
@@ -234,11 +237,7 @@ public:
 	{
 		vector<unsigned char> message;
 
-		if(mididevice==255)
-		{
-			fluid_synth_noteon(fluid_synth, midichannel, note, volume);
-		}
-		else if(mididevice<midiout->getPortCount())
+		if(mididevice<midiout->getPortCount())
 		{
 			midiout->openPort(mididevice);
 			message.clear();
@@ -256,10 +255,6 @@ public:
 	{
 		vector<unsigned char> message;
 
-		if(mididevice==255)
-		{
-			fluid_synth_noteoff(fluid_synth, midichannel, note);
-		}
 		if(mididevice<midiout->getPortCount())
 		{
 			midiout->openPort(mididevice);
@@ -278,11 +273,7 @@ public:
 	{
 		vector<unsigned char> message;
 
-		if(mididevice==255)
-		{
-			fluid_synth_program_change(fluid_synth, midichannel,program);
-		}
-		else if(mididevice<midiout->getPortCount())
+		if(mididevice<midiout->getPortCount())
 		{
 			midiout->openPort(mididevice);
 			message.clear();
@@ -314,11 +305,7 @@ public:
 	{
 		vector<unsigned char> message;
 
-		if(mididevice==255)
-		{
-			fluid_synth_all_notes_off(fluid_synth, midichannel);
-		}
-		else if(mididevice<midiout->getPortCount())
+		if(mididevice<midiout->getPortCount())
 		{
 			midiout->openPort(mididevice);
 			message.clear();
@@ -390,6 +377,7 @@ public:
 		playmode=1;
 		timerrun=true;
 		aktstep=15;
+		aktsongstep=255;
 	}
 
 	void Pause()
@@ -404,6 +392,7 @@ public:
 		playmode=0;
 		timerrun=false;
 		aktstep=15;
+//		aktsongstep=255;
 		for(int i=0;i<5;i++)
 		{
 			AllNotesOff(aset[i].mididevice,aset[i].midichannel);
@@ -461,9 +450,38 @@ public:
 		  if(aktstep>maxstep)
 		  {
 			  aktstep=0;
+			  aktsongstep++;
+			  if(aktsongstep>255)
+			  {
+				  aktsongstep=0;
+			  }
+			//Control
+				if(songpatt[10][aktsongstep]==1)
+				{
+					Stop();
+					for(int i=0;i<5;i++)
+					{
+						AllNotesOff(aset[i].mididevice,aset[i].midichannel);
+					}
+				}
+				else if(songpatt[10][aktsongstep]==2)
+				{
+					for(int i=0;i<5;i++)
+					{
+						AllNotesOff(aset[i].mididevice,aset[i].midichannel);
+					}
+				}
+				else if(songpatt[10][aktsongstep]>=60)
+				{
+					bpm=songpatt[10][aktsongstep];
+				}
 			  for(int i=0;i<5;i++)
 			  {
-				  selpattern[i]=nextselpattern[i];
+				if(playsong==true)
+				{
+					nextselpattern[i]=songpatt[i][aktsongstep]-1;
+				}
+				selpattern[i]=nextselpattern[i];
 			  }
 
 		  }
@@ -710,9 +728,16 @@ static int settingscallback(void* data, int argc, char** argv, char** azColName)
 
 static int songpatterncallback(void* data, int argc, char** argv, char** azColName)
 {
-	pattern[atoi(argv[1])][atoi(argv[2])][atoi(argv[3])][atoi(argv[4])][0]=atoi(argv[5]);
-	pattern[atoi(argv[1])][atoi(argv[2])][atoi(argv[3])][atoi(argv[4])][1]=atoi(argv[6]);
-	pattern[atoi(argv[1])][atoi(argv[2])][atoi(argv[3])][atoi(argv[4])][2]=atoi(argv[7]);
+	if(atoi(argv[1])<10)
+	{
+		pattern[atoi(argv[1])][atoi(argv[2])][atoi(argv[3])][atoi(argv[4])][0]=atoi(argv[5]);
+		pattern[atoi(argv[1])][atoi(argv[2])][atoi(argv[3])][atoi(argv[4])][1]=atoi(argv[6]);
+		pattern[atoi(argv[1])][atoi(argv[2])][atoi(argv[3])][atoi(argv[4])][2]=atoi(argv[7]);
+	}
+	else if(atoi(argv[1])<21)
+	{
+		songpatt[atoi(argv[1])-10][atoi(argv[3])]=atoi(argv[2]);
+	}
 	return 0;
 }
 
@@ -853,7 +878,7 @@ bool CheckMouse(int mousex, int mousey, SDL_Rect Position)
 
 bool Clearpattern()
 {
-	for(int i=0;i<5;i++)
+	for(int i=0;i<10;i++)
 	{
 		for(int j=0;j<15;j++)
 		{
@@ -872,10 +897,23 @@ bool Clearpattern()
 	return true;
 }
 
+bool Clearsongpattern()
+{
+	for(int i=0;i<11;i++)
+	{
+		for(int k=0;k<256;k++)
+		{
+			songpatt[i][k]=0;
+		}
+	}
+	return true;
+}
+
 int LoadScene(int nr)
 {
 	// Load SongDB
 	Clearpattern();
+	Clearsongpattern();
 	sqlite3 *songsdb;
 	char dbpath[512];
 	sprintf(dbpath, "%s/.sequencegang5/songs.db", getenv("HOME"));
@@ -994,226 +1032,6 @@ int main(int argc, char* argv[])
 
 	bool run = true;
 
-	// Fluidsynth
-    fluid_settings_t* fluid_settings = new_fluid_settings();
-    fluid_audio_driver_t* adriver;
-	struct fluid_program {
-    	unsigned int channel;
-		unsigned int bank;
-		unsigned int program;
-	};
-	fluid_program fptmp;
-	vector<fluid_program> fluid_program_state;
-    int sf2id;
-    char* fluid_alsa_device;
-	unsigned int sfid = 0;
-	unsigned int fsbank = 0;
-	unsigned int fsprogram = 0;
-	vector<SDL_Rect> fluid_settings_bank_rect;
-	vector<SDL_Rect> fluid_settings_program_rect;
-
-    fluid_settings_setint(fluid_settings, "synth.polyphony", 128);
-    fluid_synth = new_fluid_synth(fluid_settings);
-    fluid_settings_setstr(fluid_settings, "audio.driver", "alsa");
-    fluid_settings_setint(fluid_settings, "audio.period-size", 512);
-    adriver = new_fluid_audio_driver(fluid_settings, fluid_synth);
-    sf2id = fluid_synth_sfload(fluid_synth,"/usr/share/sounds/sf2/FluidR3_GM.sf2",true);
-    fluid_synth_program_change(fluid_synth, 0 , 0);
-
-    int fluid_nmid_chan = fluid_synth_count_midi_channels(fluid_synth);
-    fluid_settings_getstr(fluid_settings, "audio.alsa.device", &fluid_alsa_device);
-
-    for(int i=0;i<16;i++)
-    {
-		if (FLUID_OK == fluid_synth_get_program (fluid_synth, i, &sfid, &fsbank, &fsprogram))
-		{
-			fptmp.channel=i;
-			fptmp.bank=fsbank;
-			fptmp.program=fsprogram;
-			fluid_program_state.push_back(fptmp);
-		}
-    }
-
-// GM Instruments
-	vector<char const *> gm_program_name;
-	gm_program_name.push_back("Acoustic Piano");
-	gm_program_name.push_back("Bright Piano");
-	gm_program_name.push_back("Electric Grand Piano");
-	gm_program_name.push_back("Honky-tonk Piano");
-	gm_program_name.push_back("Electric Piano 1");
-	gm_program_name.push_back("Electric Piano 2");
-	gm_program_name.push_back("Harpsichord");
-	gm_program_name.push_back("Clavi");
-	gm_program_name.push_back("Celesta");
-	gm_program_name.push_back("Glockenspiel");
-	gm_program_name.push_back("Musical box");
-	gm_program_name.push_back("Vibraphone");
-	gm_program_name.push_back("Marimba");
-	gm_program_name.push_back("Xylophone");
-	gm_program_name.push_back("Tubular Bell");
-	gm_program_name.push_back("Dulcimer");
-	gm_program_name.push_back("Drawbar Organ");
-	gm_program_name.push_back("Percussive Organ");
-	gm_program_name.push_back("Rock Organ");
-	gm_program_name.push_back("Church organ");
-	gm_program_name.push_back("Reed organ");
-	gm_program_name.push_back("Accordion");
-	gm_program_name.push_back("Harmonica");
-	gm_program_name.push_back("Tango Accordion");
-	gm_program_name.push_back("Acoustic Guitar (nylon)");
-	gm_program_name.push_back("Acoustic Guitar (steel)");
-	gm_program_name.push_back("Electric Guitar (jazz)");
-	gm_program_name.push_back("Electric Guitar (clean)");
-	gm_program_name.push_back("Electric Guitar (muted)");
-	gm_program_name.push_back("Overdriven Guitar");
-	gm_program_name.push_back("Distortion Guitar");
-	gm_program_name.push_back("Guitar harmonics");
-	gm_program_name.push_back("Acoustic Bass");
-	gm_program_name.push_back("Electric Bass (finger)");
-	gm_program_name.push_back("Electric Bass (pick)");
-	gm_program_name.push_back("Fretless Bass");
-	gm_program_name.push_back("Slap Bass 1");
-	gm_program_name.push_back("Slap Bass 2");
-	gm_program_name.push_back("Synth Bass 1");
-	gm_program_name.push_back("Synth Bass 2");
-	gm_program_name.push_back("Violin");
-	gm_program_name.push_back("Viola");
-	gm_program_name.push_back("Cello");
-	gm_program_name.push_back("Double bass");
-	gm_program_name.push_back("Tremolo Strings");
-	gm_program_name.push_back("Pizzicato Strings");
-	gm_program_name.push_back("Orchestral Harp");
-	gm_program_name.push_back("Timpani");
-	gm_program_name.push_back("String Ensemble 1");
-	gm_program_name.push_back("String Ensemble 2");
-	gm_program_name.push_back("Synth Strings 1");
-	gm_program_name.push_back("Synth Strings 2");
-	gm_program_name.push_back("Voice Aahs");
-	gm_program_name.push_back("Voice Oohs");
-	gm_program_name.push_back("Synth Voice");
-	gm_program_name.push_back("Orchestra Hit");
-	gm_program_name.push_back("Trumpet");
-	gm_program_name.push_back("Trombone");
-	gm_program_name.push_back("Tuba");
-	gm_program_name.push_back("Muted Trumpet");
-	gm_program_name.push_back("French horn");
-	gm_program_name.push_back("Brass Section");
-	gm_program_name.push_back("Synth Brass 1");
-	gm_program_name.push_back("Synth Brass 2");
-	gm_program_name.push_back("Soprano Sax");
-	gm_program_name.push_back("Alto Sax");
-	gm_program_name.push_back("Tenor Sax");
-	gm_program_name.push_back("Baritone Sax");
-	gm_program_name.push_back("Oboe");
-	gm_program_name.push_back("English Horn");
-	gm_program_name.push_back("Bassoon");
-	gm_program_name.push_back("Clarinet");
-	gm_program_name.push_back("Piccolo");
-	gm_program_name.push_back("Flute");
-	gm_program_name.push_back("Recorder");
-	gm_program_name.push_back("Pan Flute");
-	gm_program_name.push_back("Blown Bottle");
-	gm_program_name.push_back("Shakuhachi");
-	gm_program_name.push_back("Whistle");
-	gm_program_name.push_back("Ocarina");
-	gm_program_name.push_back("Lead 1 (square)");
-	gm_program_name.push_back("Lead 2 (sawtooth)");
-	gm_program_name.push_back("Lead 3 (calliope)");
-	gm_program_name.push_back("Lead 4 (chiff)");
-	gm_program_name.push_back("Lead 5 (charang)");
-	gm_program_name.push_back("Lead 6 (voice)");
-	gm_program_name.push_back("Lead 7 (fifths)");
-	gm_program_name.push_back("Lead 8 (bass + lead)");
-	gm_program_name.push_back("Pad 1 (Fantasia)");
-	gm_program_name.push_back("Pad 2 (warm)");
-	gm_program_name.push_back("Pad 3 (polysynth)");
-	gm_program_name.push_back("Pad 4 (choir)");
-	gm_program_name.push_back("Pad 5 (bowed)");
-	gm_program_name.push_back("Pad 6 (metallic)");
-	gm_program_name.push_back("Pad 7 (halo)");
-	gm_program_name.push_back("Pad 8 (sweep)");
-	gm_program_name.push_back("FX 1 (rain)");
-	gm_program_name.push_back("FX 2 (soundtrack)");
-	gm_program_name.push_back("FX 3 (crystal)");
-	gm_program_name.push_back("FX 4 (atmosphere)");
-	gm_program_name.push_back("FX 5 (brightness)");
-	gm_program_name.push_back("FX 6 (goblins)");
-	gm_program_name.push_back("FX 7 (echoes)");
-	gm_program_name.push_back("FX 8 (sci-fi)");
-	gm_program_name.push_back("Sitar");
-	gm_program_name.push_back("Banjo");
-	gm_program_name.push_back("Shamisen");
-	gm_program_name.push_back("Koto");
-	gm_program_name.push_back("Kalimba");
-	gm_program_name.push_back("Bagpipe");
-	gm_program_name.push_back("Fiddle");
-	gm_program_name.push_back("Shanai");
-	gm_program_name.push_back("Tinkle Bell");
-	gm_program_name.push_back("Agogo");
-	gm_program_name.push_back("Steel Drums");
-	gm_program_name.push_back("Woodblock");
-	gm_program_name.push_back("Taiko Drum");
-	gm_program_name.push_back("Melodic Tom");
-	gm_program_name.push_back("Synth Drum");
-	gm_program_name.push_back("Reverse Cymbal");
-	gm_program_name.push_back("Guitar Fret Noise");
-	gm_program_name.push_back("Breath Noise");
-	gm_program_name.push_back("Seashore");
-	gm_program_name.push_back("Bird Tweet");
-	gm_program_name.push_back("Telephone Ring");
-	gm_program_name.push_back("Helicopter");
-	gm_program_name.push_back("Applause");
-	gm_program_name.push_back("Gunshot");
-
-// GM Drums
-	vector<char const *> gm_drum_name;
-	gm_drum_name.push_back("Bass Drum 2");
-	gm_drum_name.push_back("Bass Drum 1");
-	gm_drum_name.push_back("Side Stick");
-	gm_drum_name.push_back("Snare Drum 1");
-	gm_drum_name.push_back("Hand Clap");
-	gm_drum_name.push_back("Snare Drum 2");
-	gm_drum_name.push_back("Low Tom 2");
-	gm_drum_name.push_back("Closed Hi-hat");
-	gm_drum_name.push_back("Low Tom 1");
-	gm_drum_name.push_back("Pedal Hi-hat");
-	gm_drum_name.push_back("Mid Tom 2");
-	gm_drum_name.push_back("Open Hi-hat");
-	gm_drum_name.push_back("Mid Tom 1");
-	gm_drum_name.push_back("High Tom 2");
-	gm_drum_name.push_back("Crash Cymbal 1");
-	gm_drum_name.push_back("High Tom 1");
-	gm_drum_name.push_back("Ride Cymbal 1");
-	gm_drum_name.push_back("Chinese Cymbal");
-	gm_drum_name.push_back("Ride Bell");
-	gm_drum_name.push_back("Tambourine");
-	gm_drum_name.push_back("Splash Cymbal");
-	gm_drum_name.push_back("Cowbell");
-	gm_drum_name.push_back("Crash Cymbal 2");
-	gm_drum_name.push_back("Vibra Slap");
-	gm_drum_name.push_back("Ride Cymbal 2");
-	gm_drum_name.push_back("High Bongo");
-	gm_drum_name.push_back("Low Bongo");
-	gm_drum_name.push_back("Mute High Conga");
-	gm_drum_name.push_back("Open High Conga");
-	gm_drum_name.push_back("Low Conga");
-	gm_drum_name.push_back("High Timbale");
-	gm_drum_name.push_back("Low Timbale");
-	gm_drum_name.push_back("High Agogo");
-	gm_drum_name.push_back("Low Agogo");
-	gm_drum_name.push_back("Cabasa");
-	gm_drum_name.push_back("Maracas");
-	gm_drum_name.push_back("Short Whistle");
-	gm_drum_name.push_back("Long Whistle");
-	gm_drum_name.push_back("Short Guiro");
-	gm_drum_name.push_back("Long Guiro");
-	gm_drum_name.push_back("Claves");
-	gm_drum_name.push_back("High Wood Block");
-	gm_drum_name.push_back("Low Wood Block");
-	gm_drum_name.push_back("Mute Cuica");
-	gm_drum_name.push_back("Open Cuica");
-	gm_drum_name.push_back("Mute Triangle");
-	gm_drum_name.push_back("Open Triangle");
 	
 	// [vor der Event-Schleife] In diesem Array merken wir uns, welche Tasten gerade gedrückt sind.
 	bool keyPressed[SDLK_LAST];
@@ -1224,6 +1042,7 @@ int main(int argc, char* argv[])
 	textPosition.y = 0;
 	SDL_Surface* text = NULL;
 	SDL_Color textColor = {225, 225, 225};
+	SDL_Color greenColor = {0, 225, 0};
 	SDL_Color blackColor = {0, 0, 0};
 
 	SDL_Rect rahmen;
@@ -1231,7 +1050,13 @@ int main(int argc, char* argv[])
 	rahmen.y = 3*scorey;
 	rahmen.w = 32*scorex;
 	rahmen.h = 10*scorey;
-
+	
+	SDL_Rect controlrahmen;
+	controlrahmen.x = 4*scorex;
+	controlrahmen.y = 14*scorey;
+	controlrahmen.w = 32*scorex;
+	controlrahmen.h = 2*scorey;
+	
 	SDL_Surface* start_image = IMG_ReadXPMFromArray(media_playback_start_xpm);
 	SDL_Surface* stop_image = IMG_ReadXPMFromArray(media_playback_stop_xpm);
 	SDL_Surface* pause_image = IMG_ReadXPMFromArray(media_playback_pause_xpm);
@@ -1257,6 +1082,9 @@ int main(int argc, char* argv[])
 	SDL_Surface* plug_image = IMG_ReadXPMFromArray(plug_xpm);
 	SDL_Surface* songs_image = IMG_ReadXPMFromArray(songs_xpm);
 	SDL_Surface* pattern_image = IMG_ReadXPMFromArray(pattern_xpm);
+	SDL_Surface* monitor_image = IMG_ReadXPMFromArray(monitor_xpm);
+	SDL_Surface* plus_image = IMG_ReadXPMFromArray(plus_xpm);
+	SDL_Surface* minus_image = IMG_ReadXPMFromArray(minus_xpm);
 
 	char tmp[256];
 
@@ -1350,7 +1178,7 @@ int main(int argc, char* argv[])
 	WSButton noteon(20,19,2,2,scorex,scorey,NULL,"On");
 	WSButton noteoff(22,19,2,2,scorex,scorey,NULL,"Off");
 	WSButton clear(24,19,2,2,scorex,scorey,NULL,"Clear");
-	WSButton edit(26,19,2,2,scorex,scorey,edit_image,"");
+	WSButton edit(28,19,2,2,scorex,scorey,edit_image,"");
 	WSButton bpm10ff(20,17,2,2,scorex,scorey,last_image,"");
 	WSButton bpmff(18,17,2,2,scorex,scorey,right_image,"");
 	WSButton bpmfb(14,17,2,2,scorex,scorey,left_image,"");
@@ -1366,8 +1194,9 @@ int main(int argc, char* argv[])
 	WSButton settings_up(24,19,2,2,scorex,scorey,up_image,"");
 	WSButton settings_down(26,19,2,2,scorex,scorey,down_image,"");
 	WSButton extmidi(10,17,2,2,scorex,scorey,plug_image,"");
-	WSButton songs(0,17,2,2,scorex,scorey,songs_image,"");
-	WSButton showpattern(2,17,2,2,scorex,scorey,pattern_image,"");
+	WSButton songpattern(0,17,2,2,scorex,scorey,monitor_image,"");
+	WSButton songs(2,17,2,2,scorex,scorey,songs_image,"");
+	WSButton showpattern(4,17,2,2,scorex,scorey,pattern_image,"");
 	WSButton noteup(18,17,2,2,scorex,scorey,right_image,"");
 	WSButton notedown(14,17,2,2,scorex,scorey,left_image,"");
 	WSButton oktaveup(20,17,2,2,scorex,scorey,last_image,"");
@@ -1380,8 +1209,13 @@ int main(int argc, char* argv[])
 	WSButton programdown(14,17,2,2,scorex,scorey,left_image,"");
 	WSButton program10up(20,17,2,2,scorex,scorey,last_image,"");
 	WSButton program10down(12,17,2,2,scorex,scorey,first_image,"");
+	WSButton songstep10ff(20,19,2,2,scorex,scorey,last_image,"");
+	WSButton songstepff(18,19,2,2,scorex,scorey,right_image,"");
+	WSButton songstepfb(14,19,2,2,scorex,scorey,left_image,"");
+	WSButton songstep10fb(12,19,2,2,scorex,scorey,first_image,"");
+	WSButton plusbpm(22,17,2,2,scorex,scorey,plus_image,"");
 
-	songs.aktiv=true;
+	songpattern.aktiv=true;
 
 	vector <WSButton> pattern_up;
 	vector <WSButton> pattern_down;
@@ -1462,9 +1296,10 @@ int main(int argc, char* argv[])
 	WSButton key_space(12,16,12,2,scorex,scorey,NULL,"Space");
 	WSButton key_backspace(26,16,2,2,scorex,scorey,left_image,"");
 
-	char note[12][3] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "B", "H"};
+	char note[12][3] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 
 	Clearpattern();
+	Clearsongpattern();
 
 	int mousex = 0;
 	int mousey = 0;
@@ -1571,19 +1406,22 @@ int main(int argc, char* argv[])
 		{
 			anzeige=true;
 		}
-		blink++;
-		if(blink>10)
+		if(mode==7)
 		{
-			if(blinkmode==true)
+			blink++;
+			if(blink>10)
 			{
-				blinkmode=false;
+				if(blinkmode==true)
+				{
+					blinkmode=false;
+				}
+				else
+				{
+					blinkmode=true;
+				}
+				anzeige=true;
+				blink=0;
 			}
-			else
-			{
-				blinkmode=true;
-			}
-			anzeige=true;
-			blink=0;
 		}
 
 		if(anzeige==true)
@@ -1606,12 +1444,16 @@ int main(int argc, char* argv[])
 				SDL_FreeSurface(text);
 				if(submode==0)
 				{
-					text = TTF_RenderText_Blended(fontsmall, "Song", textColor);
+					text = TTF_RenderText_Blended(fontsmall, "Pattern", textColor);
 				}
 				if(submode==1)
 				{
 					sprintf(tmp, "%s",aset[selpattdevice].name.c_str());
 					text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
+				}
+				if(submode==2)
+				{
+					text = TTF_RenderText_Blended(fontsmall, "Song", textColor);
 				}
 				patterndevicenamePosition.x = 2*scorex;
 				patterndevicenamePosition.y = 0.75*scorey-text->h/2;
@@ -1648,8 +1490,22 @@ int main(int argc, char* argv[])
 					boxColor(screen, 0.6*scorex,(0.25+float(memInfo.freeram+memInfo.bufferram+memInfo.sharedram)/float(memInfo.totalram))*scorey,0.8*scorex,1.25*scorey,0x00FF00FF);
 				}
 
+
 				for (int i=0;i<16;i++)
 				{
+
+// Songpattern
+					if(submode==0)
+					{
+						SDL_FreeSurface(text);
+						sprintf(tmp, "%d",i+1);
+						text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
+						textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+						textPosition.y = 3*scorey-text->h;
+						SDL_BlitSurface(text, 0, screen, &textPosition);
+					}
+
+
 // Taktanzeige
 					if(aktstep==i and playmode!=0)
 					{
@@ -1662,8 +1518,23 @@ int main(int argc, char* argv[])
 
 // Postext
 					SDL_FreeSurface(text);
-					sprintf(tmp, "%d",i+1);
-					text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
+					if(submode==2)
+					{
+						sprintf(tmp, "%d",aktsongstep/16+aktsongstep/16*15+i+1);
+						if(aktsongstep==aktsongstep/16+aktsongstep/16*15+i)
+						{
+							text = TTF_RenderText_Blended(font, tmp, greenColor);
+						}
+						else
+						{
+							text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
+						}
+					}
+					else
+					{
+						sprintf(tmp, "%d",i+1);
+						text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
+					}
 					textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
 					textPosition.y = 3*scorey-text->h;
 					SDL_BlitSurface(text, 0, screen, &textPosition);
@@ -1792,10 +1663,99 @@ int main(int argc, char* argv[])
 							}
 						}
 					}
+				
+// Song Pattern Raster
+					if(submode==2)
+					{
+						for(int j=0;j<5;j++)
+						{
+							if(edit.aktiv==true)
+							{
+								if(i==seleditstep and j==selpattdevice)
+								{
+									boxColor(screen, 4*scorex+(2*i)*scorex,3*scorey+(2*j)*scorey,6*scorex+(2*i)*scorex,5*scorey+(2*j)*scorey,0x00AF00FF);
+								}
+							}
+							if(songpatt[j][aktsongstep/16+aktsongstep/16*15+i]==0)
+							{
+								boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x8F8F8FFF);
+							}
+							else
+							{
+								boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x8FFF8FFF);
+								SDL_FreeSurface(text);
+								sprintf(tmp, "%d",songpatt[j][aktsongstep/16+aktsongstep/16*15+i]);
+								text = TTF_RenderText_Blended(font, tmp, blackColor);
+								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+								textPosition.y = 3*scorey+(2*j)*scorey+text->h/2+2;
+								SDL_BlitSurface(text, 0, screen, &textPosition);
+							}
+						}
+						// Control
+						if(edit.aktiv==true)
+						{
+							if(i==seleditstep and selpattdevice==10)
+							{
+								boxColor(screen, 4*scorex+(2*i)*scorex,4*scorey+(2*5)*scorey,6*scorex+(2*i)*scorex,6*scorey+(2*5)*scorey,0x00AF00FF);
+							}
+						}
+						if(songpatt[10][aktsongstep/16+aktsongstep/16*15+i]==0)
+						{
+							boxColor(screen, 4*scorex+(2*i)*scorex+3,4*scorey+(2*5)*scorey+3,6*scorex+(2*i)*scorex-3,6*scorey+(2*5)*scorey-3,0x8F8F8FFF);							
+						}
+						else if(songpatt[10][aktsongstep/16+aktsongstep/16*15+i]>=60)
+						{
+							boxColor(screen, 4*scorex+(2*i)*scorex+3,4*scorey+(2*5)*scorey+3,6*scorex+(2*i)*scorex-3,6*scorey+(2*5)*scorey-3,0x8FFF8FFF);
+							SDL_FreeSurface(text);
+							text = TTF_RenderText_Blended(fontsmall, "BPM", blackColor);
+							textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+							textPosition.y = 4*scorey+(2*5)*scorey+text->h/2+2;
+							SDL_BlitSurface(text, 0, screen, &textPosition);
+							SDL_FreeSurface(text);
+							sprintf(tmp, "%d",songpatt[10][aktsongstep/16+aktsongstep/16*15+i]+60);
+							text = TTF_RenderText_Blended(fontsmall, tmp, blackColor);
+							textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+							textPosition.y = 4.5*scorey+(2*5)*scorey+text->h/2+2;
+							SDL_BlitSurface(text, 0, screen, &textPosition);
+						}
+						else if(songpatt[10][aktsongstep/16+aktsongstep/16*15+i]==1)
+						{
+							boxColor(screen, 4*scorex+(2*i)*scorex+3,4*scorey+(2*5)*scorey+3,6*scorex+(2*i)*scorex-3,6*scorey+(2*5)*scorey-3,0xFFF8F8FFF);
+							SDL_FreeSurface(text);
+							text = TTF_RenderText_Blended(fontsmall, "STOP", blackColor);
+							textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+							textPosition.y = 4*scorey+(2*5)*scorey+text->h/2+2;
+							SDL_BlitSurface(text, 0, screen, &textPosition);
+						}
+						else if(songpatt[10][aktsongstep/16+aktsongstep/16*15+i]==2)
+						{
+							boxColor(screen, 4*scorex+(2*i)*scorex+4,4*scorey+(2*5)*scorey+3,6*scorex+(2*i)*scorex-3,6*scorey+(2*5)*scorey-3,0xFFF8F8FFF);
+							SDL_FreeSurface(text);
+							text = TTF_RenderText_Blended(fontextrasmall, "All Notes", blackColor);
+							textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+							textPosition.y = 4*scorey+(2*5)*scorey+text->h/2+2;
+							SDL_BlitSurface(text, 0, screen, &textPosition);
+							SDL_FreeSurface(text);
+							text = TTF_RenderText_Blended(fontextrasmall, "OFF", blackColor);
+							textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+							textPosition.y = 4.5*scorey+(2*5)*scorey+text->h/2+2;
+							SDL_BlitSurface(text, 0, screen, &textPosition);
+						}
+						else
+						{
+							boxColor(screen, 4*scorex+(2*i)*scorex+3,4*scorey+(2*5)*scorey+3,6*scorex+(2*i)*scorex-3,6*scorey+(2*5)*scorey-3,0x8FFF8FFF);
+							SDL_FreeSurface(text);
+							sprintf(tmp, "%d",songpatt[10][aktsongstep/16+aktsongstep/16*15+i]);
+							text = TTF_RenderText_Blended(font, tmp, blackColor);
+							textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+							textPosition.y = 4*scorey+(2*5)*scorey+text->h/2+2;
+							SDL_BlitSurface(text, 0, screen, &textPosition);
+						}
+					}
 				}
 
 // Devices
-				if(submode==0)
+				if(submode==0 or submode==2)
 				{
 					for(int i=0;i<5;i++)
 					{
@@ -1819,23 +1779,32 @@ int main(int argc, char* argv[])
 						SDL_BlitSurface(text, 0, screen, &textPosition);
 					}
 				}
-
-// Pattern
-				SDL_FreeSurface(text);
-				text = TTF_RenderText_Blended(fontsmall, "Pattern", textColor);
-				textPosition.x = 0.2*scorex;
-				textPosition.y = 15*scorey-text->h/2;
-				SDL_BlitSurface(text, 0, screen, &textPosition);
-
-				for(int i=0;i<5;i++)
+				if(submode==2)
 				{
-					pattern_aktpatt[i].show(screen, fontsmall);
-
+						SDL_FreeSurface(text);
+						text = TTF_RenderText_Blended(fontsmall, "Control", textColor);
+						textPosition.x = 0.2*scorex;
+						textPosition.y = 15*scorey-text->h/2;
+						SDL_BlitSurface(text, 0, screen, &textPosition);
+				}
+// Pattern
+				if(submode!=2)
+				{
 					SDL_FreeSurface(text);
-					text = TTF_RenderText_Blended(fontsmall, aset[i].name.c_str(), textColor);
-					textPosition.x = 7*scorex+6*i*scorex-text->w/2;
-					textPosition.y = 14*scorey-text->h;
+					text = TTF_RenderText_Blended(fontsmall, "Pattern", textColor);
+					textPosition.x = 0.2*scorex;
+					textPosition.y = 15*scorey-text->h/2;
 					SDL_BlitSurface(text, 0, screen, &textPosition);
+
+					for(int i=0;i<5;i++)
+					{
+						pattern_aktpatt[i].show(screen, fontsmall);
+
+						SDL_FreeSurface(text);
+						text = TTF_RenderText_Blended(fontsmall, aset[i].name.c_str(), textColor);
+						textPosition.x = 7*scorex+6*i*scorex-text->w/2;
+						textPosition.y = 14*scorey-text->h;
+						SDL_BlitSurface(text, 0, screen, &textPosition);
 
 					SDL_FreeSurface(text);
 					if(selpattern[i]==nextselpattern[i])
@@ -1861,9 +1830,40 @@ int main(int argc, char* argv[])
 					pattern_down[i].show(screen, fontsmall);
 					pattern_up[i].show(screen, fontsmall);
 				}
+				}
+// Aktsongpattern
+				if(submode==2)
+				{
+					if(clockmodeext==false)
+					{
+						SDL_FreeSurface(text);
+						sprintf(tmp, "%d",aktsongstep+1);
+						text = TTF_RenderText_Blended(font, tmp, textColor);
+						textPosition.x = 17*scorex-text->w/2;
+						textPosition.y = 20*scorey-text->h/2;
+						SDL_BlitSurface(text, 0, screen, &textPosition);
+
+						songstep10ff.show(screen, fontsmall);
+						songstepff.show(screen, fontsmall);
+						songstepfb.show(screen, fontsmall);
+						songstep10fb.show(screen, fontsmall);
+					}
+					edit.show(screen, fontsmall);
+
+					if(edit.aktiv==true)
+					{
+						settings_up.show(screen, fontsmall);
+						settings_down.show(screen, fontsmall);
+						if(selpattdevice==10)
+						{
+							plusbpm.show(screen, fontsmall);
+						}
+					}
+
+				}
 
 // BPM
-				if(submode==0)
+				if(submode==0 or submode==2)
 				{
 					if(clockmodeext==false)
 					{
@@ -1920,15 +1920,7 @@ int main(int argc, char* argv[])
 							SDL_FreeSurface(text);
 							if(aset[selpattdevice].midichannel==9 and aset[selpattdevice].mididevice==255)
 							{
-								if(akteditnote>=35 and akteditnote<=81)
-								{
-									sprintf(tmp, "%s",gm_drum_name[akteditnote-35]);
-									text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
-								}
-								else
-								{
-									text = TTF_RenderText_Blended(fontsmall, "Drum", textColor);
-								}
+								text = TTF_RenderText_Blended(fontsmall, "Drum", textColor);
 							}
 							else
 							{
@@ -1987,62 +1979,6 @@ int main(int argc, char* argv[])
 							textPosition.y = 18*scorey-text->h/2;
 							SDL_BlitSurface(text, 0, screen, &textPosition);
 
-							SDL_FreeSurface(text);
-							if(aset[selpattdevice].midichannel==9 and aset[selpattdevice].mididevice==255)
-							{
-								if(akteditprogram==0)
-								{
-									sprintf(tmp, "%s","Standard Kit");
-								}
-								else if(akteditprogram==8)
-								{
-									sprintf(tmp, "%s","Room Kit");
-								}
-								else if(akteditprogram==16)
-								{
-									sprintf(tmp, "%s","Power Kit");
-								}
-								else if(akteditprogram==24)
-								{
-									sprintf(tmp, "%s","Electronic Kit");
-								}
-								else if(akteditprogram==25)
-								{
-									sprintf(tmp, "%s","TR-808 Kit");
-								}
-								else if(akteditprogram==32)
-								{
-									sprintf(tmp, "%s","Jazz Kit");
-								}
-								else if(akteditprogram==40)
-								{
-									sprintf(tmp, "%s","Brush Kit");
-								}
-								else if(akteditprogram==48)
-								{
-									sprintf(tmp, "%s","Orchestra Kit");
-								}
-								else if(akteditprogram==56)
-								{
-									sprintf(tmp, "%s","Sound FX Kit");
-								}
-								else if(akteditprogram==127)
-								{
-									sprintf(tmp, "%s","Percussion");
-								}
-								else
-								{
-									sprintf(tmp, "%s","Drum unknown");
-								}
-							}
-							else
-							{
-								sprintf(tmp, "%s",gm_program_name[akteditprogram]);
-							}
-							text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
-							textPosition.x = 24*scorex;
-							textPosition.y = 18*scorey-text->h/2;
-							SDL_BlitSurface(text, 0, screen, &textPosition);
 
 							programdown.show(screen, fontsmall);
 							program10down.show(screen, fontsmall);
@@ -2055,6 +1991,7 @@ int main(int argc, char* argv[])
 
 // Songs / Pattern
 
+				songpattern.show(screen, fontsmall);
 				songs.show(screen, fontsmall);
 				showpattern.show(screen, fontsmall);
 // Exit Info
@@ -2140,92 +2077,6 @@ int main(int argc, char* argv[])
 					i++;
 				}
 				
-				i = 0;
-				SDL_FreeSurface(text);
-				text = TTF_RenderText_Blended(fontsmallbold, "FLUIDSYNTH", textColor);
-				textPosition.x = 20*scorex;
-				textPosition.y = (5+i)*scorey-text->h/2;
-				SDL_BlitSurface(text, 0, screen, &textPosition);
-				
-				fluid_settings_bank_rect.clear();
-				fluid_settings_program_rect.clear();
-			    for(auto &fptmp: fluid_program_state)
-			    {
-					SDL_FreeSurface(text);
-					sprintf(tmp, "%d",fptmp.channel+1);
-					text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
-					textPosition.x = 20*scorex-text->w/2;
-					textPosition.y = (i+8)*0.75*scorey-text->h/2;
-					SDL_BlitSurface(text, 0, screen, &textPosition);
-
-					SDL_FreeSurface(text);
-					sprintf(tmp, "%d",fptmp.bank);
-					text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
-					textPosition.x = 22*scorex-text->w/2;
-					textPosition.y = (i+8)*0.75*scorey-text->h/2;
-					SDL_BlitSurface(text, 0, screen, &textPosition);
-					fluid_settings_bank_rect.push_back(textPosition);
-
-					SDL_FreeSurface(text);
-					sprintf(tmp, "%d",fptmp.program);
-					text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
-					textPosition.x = 24*scorex-text->w/2;
-					textPosition.y = (i+8)*0.75*scorey-text->h/2;
-					SDL_BlitSurface(text, 0, screen, &textPosition);
-					fluid_settings_program_rect.push_back(textPosition);
-
-					SDL_FreeSurface(text);
-					sprintf(tmp, "%s",gm_program_name[fptmp.program]);
-					text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
-					textPosition.x = 26*scorex;
-					textPosition.y = (i+8)*0.75*scorey-text->h/2;
-					SDL_BlitSurface(text, 0, screen, &textPosition);
-					fluid_settings_program_rect.push_back(textPosition);
-
-			    	i++;
-			    }
-				
-		    	i++;
-				SDL_FreeSurface(text);
-				text = TTF_RenderText_Blended(fontsmallbold, "MIDI-Channels", textColor);
-				textPosition.x = 20*scorex;
-				textPosition.y = (i+8)*0.75*scorey-text->h/2;
-				SDL_BlitSurface(text, 0, screen, &textPosition);
-
-				SDL_FreeSurface(text);
-				sprintf(tmp, "%d",fluid_nmid_chan);
-				text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
-				textPosition.x = 28*scorex;
-				textPosition.y = (i+8)*0.75*scorey-text->h/2;
-				SDL_BlitSurface(text, 0, screen, &textPosition);
-
-		    	i++;
-				SDL_FreeSurface(text);
-				text = TTF_RenderText_Blended(fontsmallbold, "Audio ALSA-Device", textColor);
-				textPosition.x = 20*scorex;
-				textPosition.y = (i+8)*0.75*scorey-text->h/2;
-				SDL_BlitSurface(text, 0, screen, &textPosition);
-
-				SDL_FreeSurface(text);
-				sprintf(tmp, "%s",fluid_alsa_device);
-				text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
-				textPosition.x = 28*scorex;
-				textPosition.y = (i+8)*0.75*scorey-text->h/2;
-				SDL_BlitSurface(text, 0, screen, &textPosition);
-
-		    	i++;
-				SDL_FreeSurface(text);
-				text = TTF_RenderText_Blended(fontsmallbold, "CPU Load", textColor);
-				textPosition.x = 20*scorex;
-				textPosition.y = (i+8)*0.75*scorey-text->h/2;
-				SDL_BlitSurface(text, 0, screen, &textPosition);
-
-				SDL_FreeSurface(text);
-				sprintf(tmp, "%d",int(fluid_synth_get_cpu_load(fluid_synth)));
-				text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
-				textPosition.x = 28*scorex;
-				textPosition.y = (i+8)*0.75*scorey-text->h/2;
-				SDL_BlitSurface(text, 0, screen, &textPosition);
 
 				ok.show(screen, fontsmall);
 			}
@@ -2346,11 +2197,7 @@ int main(int argc, char* argv[])
 						SDL_FreeSurface(text);
 						if(i<5)
 						{
-							if(int(aset[i].mididevice)==255)
-							{
-								sprintf(tmp, "%s","Fluidsynth");
-							}
-							else if(int(aset[i].mididevice)<onPorts)
+							if(int(aset[i].mididevice)<onPorts)
 							{
 								sprintf(tmp, "%s",midioutname[aset[i].mididevice].c_str());
 							}
@@ -2583,6 +2430,7 @@ int main(int argc, char* argv[])
 							{
 								submode=0;
 								songs.aktiv=true;
+								songpattern.aktiv=false;
 								showpattern.aktiv=false;
 								edit.aktiv=false;
 								clear.aktiv=false;
@@ -2595,7 +2443,21 @@ int main(int argc, char* argv[])
 							{
 								submode=1;
 								songs.aktiv=false;
+								songpattern.aktiv=false;
 								showpattern.aktiv=true;
+								edit.aktiv=false;
+								program.aktiv=false;
+								clear.aktiv=false;
+								noteonoff.aktiv=false;
+								noteon.aktiv=false;
+								noteoff.aktiv=false;
+							}
+							else if(CheckMouse(mousex, mousey, songpattern.button_rect)==true)
+							{
+								submode=2;
+								songs.aktiv=false;
+								songpattern.aktiv=true;
+								showpattern.aktiv=false;
 								edit.aktiv=false;
 								program.aktiv=false;
 								clear.aktiv=false;
@@ -2608,6 +2470,15 @@ int main(int argc, char* argv[])
 								if(playmode==0)
 								{
 									wsmidi.Play();
+									if(submode==2)
+									{
+										playsong=true;
+									}
+									else
+									{
+										playsong=false;
+									}
+									
 								}
 								else if(playmode==2)
 								{
@@ -2627,18 +2498,6 @@ int main(int argc, char* argv[])
 							}
 							else if(CheckMouse(mousex, mousey, info.button_rect)==true)
 							{
-								fluid_program_state.clear();
-							    for(int i=0;i<16;i++)
-								{
-									if (FLUID_OK == fluid_synth_get_program (fluid_synth, i, &sfid, &fsbank, &fsprogram))
-									{
-										fptmp.channel=i;
-										fptmp.bank=fsbank;
-										fptmp.program=fsprogram;
-										fluid_program_state.push_back(fptmp);
-									}
-								}
-
 								mode=1;
 							}
 							else if(CheckMouse(mousex, mousey, exit.button_rect)==true)
@@ -2752,7 +2611,7 @@ int main(int argc, char* argv[])
 								if(CheckMouse(mousex, mousey, pattern_down[i].button_rect)==true)
 								{
 									pattern_down[i].aktiv=true;
-									if(nextselpattern[i]>0)
+									if(nextselpattern[i]>-1)
 									{
 										nextselpattern[i]--;
 									}
@@ -2762,7 +2621,48 @@ int main(int argc, char* argv[])
 									}
 								}
 							}
-			        		if(submode==0)
+			        		if(submode==2)
+			        		{
+								if(CheckMouse(mousex, mousey, songstepff.button_rect)==true)
+								{
+										songstepff.aktiv=true;
+										if(aktsongstep<255)
+										{
+											aktsongstep++;
+										}
+								}
+								else if(CheckMouse(mousex, mousey, songstepfb.button_rect)==true)
+								{
+										songstepfb.aktiv=true;
+										if(aktsongstep>0)
+										{
+											aktsongstep--;
+										}
+								}
+								else if(CheckMouse(mousex, mousey, songstep10ff.button_rect)==true)
+								{
+									if(clockmodeext==false)
+									{
+										songstep10ff.aktiv=true;
+										if(aktsongstep<239)
+										{
+											aktsongstep=aktsongstep+16;
+										}
+									}
+								}
+								else if(CheckMouse(mousex, mousey, songstep10fb.button_rect)==true)
+								{
+									if(clockmodeext==false)
+									{
+										songstep10fb.aktiv=true;
+										if(aktsongstep>16)
+										{
+											aktsongstep=aktsongstep-16;
+										}
+									}
+								}
+							}
+			        		if(submode==0 or submode==2)
 			        		{
 								if(CheckMouse(mousex, mousey, bpmff.button_rect)==true)
 								{
@@ -2865,7 +2765,10 @@ int main(int argc, char* argv[])
 										extmidi.aktiv=false;
 									}
 								}
-								else if(CheckMouse(mousex, mousey, rahmen)==true)
+							}
+			        		if(submode==0)
+			        		{
+								if(CheckMouse(mousex, mousey, rahmen)==true)
 								{
 									int i = int((mousey/scorey-3)/2);
 									int j = int((mousex/scorex-4)/2);
@@ -2882,6 +2785,68 @@ int main(int argc, char* argv[])
 									noteonoff.aktiv=false;
 									noteon.aktiv=false;
 									noteoff.aktiv=false;
+								}
+			        		}
+			        		if(submode==2)
+			        		{
+								if(CheckMouse(mousex, mousey, rahmen)==true)
+								{
+									int i = int((mousey/scorey-3)/2);
+									int j = int((mousex/scorex-4)/2);
+									selpattdevice = i;
+									seleditstep = j;
+									aktsongstep = aktsongstep/16*16+j;
+								}
+								else if(CheckMouse(mousex, mousey, controlrahmen)==true)
+								{
+//									int i = int((mousey/scorey-3)/2);
+									int j = int((mousex/scorex-4)/2);
+									selpattdevice = 10;
+									seleditstep = j;
+									aktsongstep = aktsongstep/16*16+j;
+								}
+								else if(CheckMouse(mousex, mousey, edit.button_rect)==true)
+								{
+									if(edit.aktiv==true)
+									{
+										edit.aktiv=false;
+										program.aktiv=false;
+										clear.aktiv=false;
+										noteonoff.aktiv=false;
+										noteon.aktiv=false;
+										noteoff.aktiv=false;
+									}
+									else
+									{
+										edit.aktiv=true;
+									}
+								}
+								if(edit.aktiv==true)
+								{
+									if(CheckMouse(mousex, mousey, settings_up.button_rect)==true)
+									{
+										settings_up.aktiv=true;
+										if(songpatt[selpattdevice][aktsongstep]<16)
+										{
+											songpatt[selpattdevice][aktsongstep]++;
+										}
+									}
+									else if(CheckMouse(mousex, mousey, settings_down.button_rect)==true)
+									{
+										settings_down.aktiv=true;
+										if(songpatt[selpattdevice][aktsongstep]>0)
+										{
+											songpatt[selpattdevice][aktsongstep]--;
+										}
+									}
+									if(selpattdevice==10)
+									{
+										if(CheckMouse(mousex, mousey, plusbpm.button_rect)==true)
+										{
+											plusbpm.aktiv=true;
+											songpatt[10][aktsongstep]=bpm;
+										}
+									}
 								}
 			        		}
 			        		if(submode==1)
@@ -3544,7 +3509,7 @@ int main(int argc, char* argv[])
 										return 1;
 									}
 
-									cout << "Schreibe in DB Song" << save_song-1 << endl;
+									cout << "Schreibe in DB Song " << save_song-1 << endl;
 
 									for(int i=0;i<5;i++)
 									{
@@ -3556,7 +3521,6 @@ int main(int argc, char* argv[])
 												{
 													if(pattern[i][j][k][l][0]>0)
 													{
-
 														sprintf(sql, "INSERT INTO Song%d (device,pattern,step,pos,command,data1,data2) VALUES (%d,%d,%d,%d,%d,%d,%d);",save_song-1,i,j,k,l,pattern[i][j][k][l][0],pattern[i][j][k][l][1],pattern[i][j][k][l][2]);
 														if( sqlite3_exec(songsdb,sql,NULL,0,0) != SQLITE_OK)
 														{
@@ -3566,6 +3530,24 @@ int main(int argc, char* argv[])
 													}
 												}
 											}
+										}
+									}
+									for(int i=0;i<11;i++)
+									{
+										for(int j=0;j<256;j++)
+										{
+											if(songpatt[i][j]>0)
+											{
+//												cout << i+10 << " " << j << " " << int(songpatt[i][j]) << endl;
+												sprintf(sql, "INSERT INTO Song%d (device,pattern,step) VALUES (%d,%d,%d);",save_song-1,i+10,songpatt[i][j],j);
+												if( sqlite3_exec(songsdb,sql,NULL,0,0) != SQLITE_OK)
+												{
+													cout << "Fehler beim INSERT: " << sqlite3_errmsg(songsdb) << endl;
+													return 1;
+												}
+												
+											} 
+											
 										}
 									}
 									sqlite3_close(songsdb);
@@ -3688,6 +3670,10 @@ int main(int argc, char* argv[])
 			        	bpmfb.aktiv = false;
 			        	bpm10ff.aktiv = false;
 			        	bpm10fb.aktiv = false;
+			        	songstepff.aktiv = false;
+			        	songstepfb.aktiv = false;
+			        	songstep10ff.aktiv = false;
+			        	songstep10fb.aktiv = false;
 			        	bpmcorff.aktiv = false;
 			        	bpmcorfb.aktiv = false;
 			        	bpmcor10ff.aktiv = false;
@@ -3706,6 +3692,7 @@ int main(int argc, char* argv[])
 			        	programdown.aktiv = false;
 			        	program10up.aktiv = false;
 			        	program10down.aktiv = false;
+			        	plusbpm.aktiv = false;
 			        	for(int i=0;i<5;i++)
 			        	{
 			        		pattern_up[i].aktiv = false;
