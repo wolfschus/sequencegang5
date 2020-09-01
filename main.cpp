@@ -3080,36 +3080,39 @@ int main(int argc, char* argv[])
 									int j = int((mousex/scorex-4)/2);
 									seleditstep = j;
 									seleditcommand = i;
-
-									if(clear.aktiv==true and edit.aktiv==true)
+									
+									if(selpattern[selpattdevice]>=0)
 									{
-										pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][0]=0;
-										pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][1]=0;
-										pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][2]=0;
-									}
-									else if(noteonoff.aktiv==true and edit.aktiv==true)
-									{
-										pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][0]=1;
-										pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][1]=akteditnote;
-										pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][2]=akteditvolume;
-									}
-									else if(noteon.aktiv==true and edit.aktiv==true)
-									{
-										pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][0]=2;
-										pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][1]=akteditnote;
-										pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][2]=akteditvolume;
-									}
-									else if(noteoff.aktiv==true and edit.aktiv==true)
-									{
-										pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][0]=3;
-										pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][1]=akteditnote;
-										pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][2]=0;
-									}
-									else if(program.aktiv==true and edit.aktiv==true)
-									{
-										pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][0]=4;
-										pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][1]=akteditprogram;
-										pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][2]=0;
+										if(clear.aktiv==true and edit.aktiv==true)
+										{
+											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][0]=0;
+											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][1]=0;
+											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][2]=0;
+										}
+										else if(noteonoff.aktiv==true and edit.aktiv==true)
+										{
+											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][0]=1;
+											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][1]=akteditnote;
+											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][2]=akteditvolume;
+										}
+										else if(noteon.aktiv==true and edit.aktiv==true)
+										{
+											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][0]=2;
+											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][1]=akteditnote;
+											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][2]=akteditvolume;
+										}
+										else if(noteoff.aktiv==true and edit.aktiv==true)
+										{
+											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][0]=3;
+											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][1]=akteditnote;
+											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][2]=0;
+										}
+										else if(program.aktiv==true and edit.aktiv==true)
+										{
+											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][0]=4;
+											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][1]=akteditprogram;
+											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][2]=0;
+										}
 									}
 								}
 			        		}
