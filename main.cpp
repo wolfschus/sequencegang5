@@ -50,6 +50,8 @@
 #include "images/go-last.xpm"
 #include "images/go-up.xpm"
 #include "images/go-down.xpm"
+#include "images/go-top.xpm"
+#include "images/go-bottom.xpm"
 #include "images/plug.xpm"
 #include "images/songs.xpm"
 #include "images/pattern.xpm"
@@ -66,8 +68,8 @@ int songpatt[11][256];
 
 struct seqsettings{
 	string name;
-	int mididevice;
-	int midichannel;
+	unsigned mididevice;
+	unsigned midichannel;
 	int minprog;
 	int maxprog;
 	int minbank;
@@ -102,14 +104,14 @@ bool timerrun=false;
 bool clockmodeext=false;
 bool exttimerrun = false;
 bool playsong = false;
-int seite = 0;
+bool seite2 = false;
 int mode = 0;
 int submode = 2;
 int settingsmode = 0;
 int selpattdevice = 0;
-int selpattern[5] = {0,0,0,0,0};
-int oldselpattern[5] = {0,0,0,0,0};
-int nextselpattern[5] = {0,0,0,0,0};
+int selpattern[10] = {0,0,0,0,0,0,0,0,0,0};
+int oldselpattern[10] = {0,0,0,0,0,0,0,0,0,0};
+int nextselpattern[10] = {0,0,0,0,0,0,0,0,0,0};
 char sql[512];
 string songname = "New Song";
 string songnametmp = "New Song";
@@ -1085,6 +1087,8 @@ int main(int argc, char* argv[])
 	SDL_Surface* monitor_image = IMG_ReadXPMFromArray(monitor_xpm);
 	SDL_Surface* plus_image = IMG_ReadXPMFromArray(plus_xpm);
 	SDL_Surface* minus_image = IMG_ReadXPMFromArray(minus_xpm);
+	SDL_Surface* top_image = IMG_ReadXPMFromArray(go_top_xpm);
+	SDL_Surface* bottom_image = IMG_ReadXPMFromArray(go_bottom_xpm);
 
 	char tmp[256];
 
@@ -1106,7 +1110,7 @@ int main(int argc, char* argv[])
 	}
 	sqlite3_close(settingsdb);
 
-	int aktbank[5] = {0,0,0,0,0};
+	int aktbank[10] = {0,0,0,0,0,0,0,0,0,0};
 	int selsetmididevice = 0;
 	int seleditstep = 0;
 	int akteditnote = 60;
@@ -1161,7 +1165,7 @@ int main(int argc, char* argv[])
 	anzahlcpu=get_nprocs();
 	sysinfo (&memInfo);
 
-	int aktprog[5] = {aset[0].minprog,aset[1].minprog,aset[2].minprog,aset[3].minprog,aset[4].minprog};
+	int aktprog[10] = {aset[0].minprog,aset[1].minprog,aset[2].minprog,aset[3].minprog,aset[4].minprog,aset[5].minprog,aset[6].minprog,aset[7].minprog,aset[8].minprog,aset[9].minprog};
 
 	SDL_Rect imagePosition;
 
@@ -1214,6 +1218,8 @@ int main(int argc, char* argv[])
 	WSButton songstepfb(14,19,2,2,scorex,scorey,left_image,"");
 	WSButton songstep10fb(12,19,2,2,scorex,scorey,first_image,"");
 	WSButton plusbpm(22,17,2,2,scorex,scorey,plus_image,"");
+	WSButton top(34,17,2,2,scorex,scorey,top_image,"");
+	WSButton bottom(34,17,2,2,scorex,scorey,bottom_image,"");
 
 	songpattern.aktiv=true;
 
@@ -1355,14 +1361,14 @@ int main(int argc, char* argv[])
 
 	// Check available Midi In ports.
 	cout << "Midi In" << endl;
-	int inPorts = midiin->getPortCount();
+	unsigned inPorts = midiin->getPortCount();
 	if ( inPorts == 0 )
 	{
 		cout << "No ports available!" << endl;
 	}
 	else
 	{
-		for(int i=0;i<inPorts;i++)
+		for(unsigned i=0;i<inPorts;i++)
 		{
 			midiinname.push_back(midiin->getPortName(i));
 			found = midiin->getPortName(i).find(":");
@@ -1399,6 +1405,7 @@ int main(int argc, char* argv[])
 		launchpad.LPInit();
 	}
 
+// Anzeige
 	anzeige=true;
 	while(run)
 	{
@@ -1426,7 +1433,7 @@ int main(int argc, char* argv[])
 
 		if(anzeige==true)
 		{
-			SDL_FillRect(screen, NULL, 0x000000);
+   			SDL_FillRect(screen, NULL, 0x000000);
 			boxColor(screen, 0,0,screen->w,1.5*scorey,0x00008FFF);
 			SDL_FreeSurface(text);
 			text = TTF_RenderText_Blended(fontbold, "*** SEQUENCEGANG 5.0 ***", textColor);
@@ -1523,7 +1530,8 @@ int main(int argc, char* argv[])
 						sprintf(tmp, "%d",aktsongstep/16+aktsongstep/16*15+i+1);
 						if(aktsongstep==aktsongstep/16+aktsongstep/16*15+i)
 						{
-							text = TTF_RenderText_Blended(font, tmp, greenColor);
+							boxColor(screen, 4*scorex+(2*i)*scorex+3,2.25*scorey+3,6*scorex+(2*i)*scorex-3,3*scorey-3,0x00FF00FF);
+							text = TTF_RenderText_Blended(fontsmall, tmp, blackColor);
 						}
 						else
 						{
@@ -1548,19 +1556,19 @@ int main(int argc, char* argv[])
 
 							for(int k=0;k<5;k++)
 							{
-								if(pattern[j][selpattern[j]][i][k][0]==1)
+								if(pattern[j+5*seite2][selpattern[j+5*seite2]][i][k][0]==1)
 								{
-									boxColor(screen, 4*scorex+(2*i)*scorex+(2*scorex)*k/5+3,(5*scorey+(2*j)*scorey-3)-(((2*scorey-6)*pattern[j][selpattern[j]][i][k][2])/127), 4*scorex+(2*i)*scorex+(2*scorex)*(k+1)/5-3,5*scorey+(2*j)*scorey-3,0xFFFF8FFF);
+									boxColor(screen, 4*scorex+(2*i)*scorex+(2*scorex)*k/5+3,(5*scorey+(2*j)*scorey-3)-(((2*scorey-6)*pattern[j+5*seite2][selpattern[j+5*seite2]][i][k][2])/127), 4*scorex+(2*i)*scorex+(2*scorex)*(k+1)/5-3,5*scorey+(2*j)*scorey-3,0xFFFF8FFF);
 								}
-								if(pattern[j][selpattern[j]][i][k][0]==2)
+								if(pattern[j][selpattern[j+5*seite2]][i][k][0]==2)
 								{
-									boxColor(screen, 4*scorex+(2*i)*scorex+(2*scorex)*k/5+3,(5*scorey+(2*j)*scorey-3)-(((2*scorey-6)*pattern[j][selpattern[j]][i][k][2])/127), 4*scorex+(2*i)*scorex+(2*scorex)*(k+1)/5-3,5*scorey+(2*j)*scorey-3,0x8FFF8FFF);
+									boxColor(screen, 4*scorex+(2*i)*scorex+(2*scorex)*k/5+3,(5*scorey+(2*j)*scorey-3)-(((2*scorey-6)*pattern[j+5*seite2][selpattern[j+5*seite2]][i][k][2])/127), 4*scorex+(2*i)*scorex+(2*scorex)*(k+1)/5-3,5*scorey+(2*j)*scorey-3,0x8FFF8FFF);
 								}
-								if(pattern[j][selpattern[j]][i][k][0]==3)
+								if(pattern[j][selpattern[j+5*seite2]][i][k][0]==3)
 								{
 									boxColor(screen, 4*scorex+(2*i)*scorex+(2*scorex)*k/5+3,3*scorey+(2*j)*scorey+3, 4*scorex+(2*i)*scorex+(2*scorex)*(k+1)/5-3,5*scorey+(2*j)*scorey-3,0xFF8F8FFF);
 								}
-								if(pattern[j][selpattern[j]][i][k][0]==4)
+								if(pattern[j][selpattern[j+5*seite2]][i][k][0]==4)
 								{
 									boxColor(screen, 4*scorex+(2*i)*scorex+(2*scorex)*k/5+3,3*scorey+(2*j)*scorey+3, 4*scorex+(2*i)*scorex+(2*scorex)*(k+1)/5-3,5*scorey+(2*j)*scorey-3,0x8F8FFFFF);
 								}
@@ -1676,7 +1684,7 @@ int main(int argc, char* argv[])
 									boxColor(screen, 4*scorex+(2*i)*scorex,3*scorey+(2*j)*scorey,6*scorex+(2*i)*scorex,5*scorey+(2*j)*scorey,0x00AF00FF);
 								}
 							}
-							if(songpatt[j][aktsongstep/16+aktsongstep/16*15+i]==0)
+							if(songpatt[j+5*seite2][aktsongstep/16+aktsongstep/16*15+i]==0)
 							{
 								boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x8F8F8FFF);
 							}
@@ -1684,7 +1692,7 @@ int main(int argc, char* argv[])
 							{
 								boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x8FFF8FFF);
 								SDL_FreeSurface(text);
-								sprintf(tmp, "%d",songpatt[j][aktsongstep/16+aktsongstep/16*15+i]);
+								sprintf(tmp, "%d",songpatt[j+5*seite2][aktsongstep/16+aktsongstep/16*15+i]);
 								text = TTF_RenderText_Blended(font, tmp, blackColor);
 								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
 								textPosition.y = 3*scorey+(2*j)*scorey+text->h/2+2;
@@ -1720,7 +1728,7 @@ int main(int argc, char* argv[])
 						}
 						else if(songpatt[10][aktsongstep/16+aktsongstep/16*15+i]==1)
 						{
-							boxColor(screen, 4*scorex+(2*i)*scorex+3,4*scorey+(2*5)*scorey+3,6*scorex+(2*i)*scorex-3,6*scorey+(2*5)*scorey-3,0xFFF8F8FFF);
+							boxColor(screen, 4*scorex+(2*i)*scorex+3,4*scorey+(2*5)*scorey+3,6*scorex+(2*i)*scorex-3,6*scorey+(2*5)*scorey-3,unsigned(0xFFF8F8FFF));
 							SDL_FreeSurface(text);
 							text = TTF_RenderText_Blended(fontsmall, "STOP", blackColor);
 							textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
@@ -1729,7 +1737,7 @@ int main(int argc, char* argv[])
 						}
 						else if(songpatt[10][aktsongstep/16+aktsongstep/16*15+i]==2)
 						{
-							boxColor(screen, 4*scorex+(2*i)*scorex+4,4*scorey+(2*5)*scorey+3,6*scorex+(2*i)*scorex-3,6*scorey+(2*5)*scorey-3,0xFFF8F8FFF);
+							boxColor(screen, 4*scorex+(2*i)*scorex+4,4*scorey+(2*5)*scorey+3,6*scorex+(2*i)*scorex-3,6*scorey+(2*5)*scorey-3,unsigned(0xFFF8F8FFF));
 							SDL_FreeSurface(text);
 							text = TTF_RenderText_Blended(fontextrasmall, "All Notes", blackColor);
 							textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
@@ -1760,7 +1768,7 @@ int main(int argc, char* argv[])
 					for(int i=0;i<5;i++)
 					{
 						SDL_FreeSurface(text);
-						sprintf(tmp, "%s",aset[i].name.c_str());
+						sprintf(tmp, "%s",aset[i+6*seite2].name.c_str());
 						text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
 						textPosition.x = 0.2*scorex;
 						textPosition.y = 4*scorey+(2*i)*scorey-text->h/2;
@@ -1801,15 +1809,15 @@ int main(int argc, char* argv[])
 						pattern_aktpatt[i].show(screen, fontsmall);
 
 						SDL_FreeSurface(text);
-						text = TTF_RenderText_Blended(fontsmall, aset[i].name.c_str(), textColor);
+						text = TTF_RenderText_Blended(fontsmall, aset[i+6*seite2].name.c_str(), textColor);
 						textPosition.x = 7*scorex+6*i*scorex-text->w/2;
 						textPosition.y = 14*scorey-text->h;
 						SDL_BlitSurface(text, 0, screen, &textPosition);
 
 					SDL_FreeSurface(text);
-					if(selpattern[i]==nextselpattern[i])
+					if(selpattern[i+5*seite2]==nextselpattern[i+5*seite2])
 					{
-						sprintf(tmp, "%d",selpattern[i]+1);
+						sprintf(tmp, "%d",selpattern[i+5*seite2]+1);
 					}
 					else
 					{
@@ -1819,7 +1827,7 @@ int main(int argc, char* argv[])
 						}
 						else
 						{
-							sprintf(tmp, "%d",nextselpattern[i]+1);
+							sprintf(tmp, "%d",nextselpattern[i+5*seite2]+1);
 						}
 					}
 					text = TTF_RenderText_Blended(fontbold, tmp, blackColor);
@@ -1862,6 +1870,15 @@ int main(int argc, char* argv[])
 
 				}
 
+// Seite 2
+				if(seite2==true)
+				{
+					top.show(screen, fontsmall);
+				}
+				else
+				{
+					bottom.show(screen, fontsmall);
+				}
 // BPM
 				if(submode==0 or submode==2)
 				{
@@ -1942,7 +1959,7 @@ int main(int argc, char* argv[])
 							noteup.show(screen, fontsmall);
 							oktaveup.show(screen, fontsmall);
 						}
-	// Pattern Volume
+// Pattern Volume
 						if(noteonoff.aktiv==true or noteon.aktiv==true)
 						{
 							SDL_FreeSurface(text);
@@ -1994,6 +2011,7 @@ int main(int argc, char* argv[])
 				songpattern.show(screen, fontsmall);
 				songs.show(screen, fontsmall);
 				showpattern.show(screen, fontsmall);
+
 // Exit Info
 
 				exit.show(screen, fontsmall);
@@ -2187,7 +2205,7 @@ int main(int argc, char* argv[])
 				for(int i=0;i<6;i++)
 				{
 					SDL_FreeSurface(text);
-					text = TTF_RenderText_Blended(font, aset[i].name.c_str(), textColor);
+					text = TTF_RenderText_Blended(font, aset[i+6*seite2].name.c_str(), textColor);
 					textPosition.x = 0.2*scorex;
 					textPosition.y = 5*scorey+2*i*scorey;
 					SDL_BlitSurface(text, 0, screen, &textPosition);
@@ -2197,9 +2215,9 @@ int main(int argc, char* argv[])
 						SDL_FreeSurface(text);
 						if(i<5)
 						{
-							if(int(aset[i].mididevice)<onPorts)
+							if(int(aset[i+6*seite2].mididevice)<onPorts)
 							{
-								sprintf(tmp, "%s",midioutname[aset[i].mididevice].c_str());
+								sprintf(tmp, "%s",midioutname[aset[i+6*seite2].mididevice].c_str());
 							}
 							else
 							{
@@ -2208,9 +2226,9 @@ int main(int argc, char* argv[])
 						}
 						else
 						{
-							if(int(aset[i].mididevice)<inPorts)
+							if(aset[i+6*seite2].mididevice<inPorts)
 							{
-								sprintf(tmp, "%s",midiinname[aset[i].mididevice].c_str());
+								sprintf(tmp, "%s",midiinname[aset[i+6*seite2].mididevice].c_str());
 							}
 							else
 							{
@@ -2270,6 +2288,14 @@ int main(int argc, char* argv[])
 
 				}
 
+				if(seite2==true)
+				{
+					top.show(screen, fontsmall);
+				}
+				else
+				{
+					bottom.show(screen, fontsmall);
+				}
 				ok.show(screen, fontsmall);
 				cancel.show(screen, fontsmall);
 
@@ -2591,33 +2617,33 @@ int main(int argc, char* argv[])
 											pattern_aktpatt[i].aktiv=false;
 										}
 										pattern_aktpatt[i].aktiv=true;
-										aktpatt=selpattern[i];
-										selpatt=i;
+										aktpatt=selpattern[i+5*seite2];
+										selpatt=i+5*seite2;
 									}
 
 								}
 								if(CheckMouse(mousex, mousey, pattern_up[i].button_rect)==true)
 								{
 									pattern_up[i].aktiv=true;
-									if(nextselpattern[i]<15)
+									if(nextselpattern[i+5*seite2]<15)
 									{
-										nextselpattern[i]++;
+										nextselpattern[i+5*seite2]++;
 									}
 									if(playmode==0)
 									{
-										selpattern[i]=nextselpattern[i];
+										selpattern[i+5*seite2]=nextselpattern[i+5*seite2];
 									}
 								}
 								if(CheckMouse(mousex, mousey, pattern_down[i].button_rect)==true)
 								{
 									pattern_down[i].aktiv=true;
-									if(nextselpattern[i]>-1)
+									if(nextselpattern[i+5*seite2]>-1)
 									{
-										nextselpattern[i]--;
+										nextselpattern[i+5*seite2]--;
 									}
 									if(playmode==0)
 									{
-										selpattern[i]=nextselpattern[i];
+										selpattern[i+5*seite2]=nextselpattern[i+5*seite2];
 									}
 								}
 							}
@@ -2763,6 +2789,17 @@ int main(int argc, char* argv[])
 									{
 										clockmodeext=false;
 										extmidi.aktiv=false;
+									}
+								}
+								else if(CheckMouse(mousex, mousey, top.button_rect)==true)
+								{
+									if(seite2==true)
+									{
+										seite2=false;
+									}
+									else
+									{
+										seite2=true;
 									}
 								}
 							}
@@ -2953,6 +2990,17 @@ int main(int argc, char* argv[])
 										{
 											akteditvolume=0;
 										}
+									}
+								}
+								else if(CheckMouse(mousex, mousey, top.button_rect)==true)
+								{
+									if(seite2==true)
+									{
+										seite2=false;
+									}
+									else
+									{
+										seite2=true;
 									}
 								}
 								if(CheckMouse(mousex, mousey, programup.button_rect)==true)
@@ -3215,6 +3263,17 @@ int main(int argc, char* argv[])
 							{
 								mode=0;
 							}
+							if(CheckMouse(mousex, mousey, top.button_rect)==true)
+							{
+								if(seite2==true)
+								{
+									seite2=false;
+								}
+								else
+								{
+									seite2=true;
+								}
+							}
 
 							if(settingsmode==0)
 							{
@@ -3275,12 +3334,7 @@ int main(int argc, char* argv[])
 								else if(CheckMouse(mousex, mousey, settings_down.button_rect)==true)
 								{
 									settings_down.aktiv=true;
-									if(aset[selsetmididevice-1].mididevice==0)
-									{
-										aset[selsetmididevice-1].mididevice=255;
-										changesettings=true;
-									}
-									else if(aset[selsetmididevice-1].mididevice>0 and aset[selsetmididevice-1].mididevice<255)
+									if(aset[selsetmididevice-1].mididevice>0 and aset[selsetmididevice-1].mididevice<255)
 									{
 										aset[selsetmididevice-1].mididevice--;
 										changesettings=true;
@@ -3696,6 +3750,8 @@ int main(int argc, char* argv[])
 			        	program10up.aktiv = false;
 			        	program10down.aktiv = false;
 			        	plusbpm.aktiv = false;
+			        	top.aktiv = false;
+			        	bottom.aktiv = false;
 			        	for(int i=0;i<5;i++)
 			        	{
 			        		pattern_up[i].aktiv = false;
