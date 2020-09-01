@@ -2836,7 +2836,6 @@ int main(int argc, char* argv[])
 								}
 								else if(CheckMouse(mousex, mousey, controlrahmen)==true)
 								{
-//									int i = int((mousey/scorey-3)/2);
 									int j = int((mousex/scorex-4)/2);
 									selpattdevice = 10;
 									seleditstep = j;
@@ -2863,17 +2862,17 @@ int main(int argc, char* argv[])
 									if(CheckMouse(mousex, mousey, settings_up.button_rect)==true)
 									{
 										settings_up.aktiv=true;
-										if(songpatt[selpattdevice][aktsongstep]<16)
+										if(songpatt[selpattdevice+5*seite2][aktsongstep]<16)
 										{
-											songpatt[selpattdevice][aktsongstep]++;
+											songpatt[selpattdevice+5*seite2][aktsongstep]++;
 										}
 									}
 									else if(CheckMouse(mousex, mousey, settings_down.button_rect)==true)
 									{
 										settings_down.aktiv=true;
-										if(songpatt[selpattdevice][aktsongstep]>0)
+										if(songpatt[selpattdevice+5*seite2][aktsongstep]>0)
 										{
-											songpatt[selpattdevice][aktsongstep]--;
+											songpatt[selpattdevice+5*seite2][aktsongstep]--;
 										}
 									}
 									if(selpattdevice==10)
@@ -2997,10 +2996,12 @@ int main(int argc, char* argv[])
 									if(seite2==true)
 									{
 										seite2=false;
+										selpattdevice=0;
 									}
 									else
 									{
 										seite2=true;
+										selpattdevice=6;
 									}
 								}
 								if(CheckMouse(mousex, mousey, programup.button_rect)==true)
@@ -3057,13 +3058,13 @@ int main(int argc, char* argv[])
 								}
 								if(CheckMouse(mousex, mousey, patterndevicenamePosition)==true)
 								{
-									if(selpattdevice<4)
+									if(selpattdevice-6*seite2<4)
 									{
 										selpattdevice++;
 									}
 									else
 									{
-										selpattdevice=0;
+										selpattdevice=0+6*seite2;
 									}
 								}
 								else if(CheckMouse(mousex, mousey, program.button_rect)==true and edit.aktiv==true)
