@@ -22,4 +22,4 @@ make setup (Directory ~/.sequencegang will created, db-files copied, only first 
 sudo make install
 
 Info:
-I started developing a MIDI sequencer in 1987 on a Commodore 64. I then ported the program to an Amiga. After I became a big Raspberry Pi fan a few years ago, I ported the program to Linux / SDL.
+I started developing a MIDI sequencer in 1987 on a Commodore 64. Then I ported the program to an Amiga. After I became a big Raspberry Pi fan a few years ago, I ported the program to Linux / SDL.
