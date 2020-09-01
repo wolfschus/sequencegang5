@@ -11,13 +11,13 @@ sudo apt install libsdl-gfx1.2-5
 
 To compile:
 
-sudo apt install libsdl1.2-dev libsdl-ttf2.0-dev libsdl-gfx1.2-dev libsdl-mixer1.2-dev librtmidi-dev librtaudio-dev libsqlite3-dev libfluidsynth-dev fluid-soundfont-gm
+sudo apt install libsdl1.2-dev libsdl-ttf2.0-dev libsdl-gfx1.2-dev libsdl-mixer1.2-dev librtmidi-dev librtaudio-dev libsqlite3-dev
 
 make
 
 To install:
 
-make setup
+make setup (Directory ~/.sequencegang will created, db-files copied, only first time needed)
 sudo make install
 
 Info:
