@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 0.94 31.08.2020
+// Version     : 0.96 02.09.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux/Raspberry PI
 // License     : GNU General Public License v3.0
@@ -105,6 +105,10 @@ bool clockmodeext=false;
 bool exttimerrun = false;
 bool playsong = false;
 bool seite2 = false;
+bool anzeige = true;
+bool programedit = false;
+bool noteedit = false;
+bool volumeedit = false;
 int mode = 0;
 int submode = 2;
 int settingsmode = 0;
@@ -119,12 +123,17 @@ int aktsong=0;
 int aktpatt=0;
 int selpatt=0;
 int oldselpatt=0;
+int akteditnote = 60;
+int akteditvolume = 127;
+int seleditcommand = 0;
+int akteditprogram = 0;
 
 int beatstep_in = -1;
 int vmpk_in = -1;
 int launchpad_in=-1;
 int beatstep_out = -1;
 int launchpad_out=-1;
+int launchkeymini_in = -1;
 
 timeval start, stop;
 
@@ -766,6 +775,7 @@ static int songpatternnamecallback(void* data, int argc, char** argv, char** azC
 void midiincallback( double deltatime, std::vector< unsigned char > *message, void *userData )
 {
 	unsigned int nBytes = message->size();
+	cout << "MidiIn: ";
 
 	for(unsigned int i=0;i<nBytes;i++)
 	{
@@ -777,7 +787,70 @@ void midiincallback( double deltatime, std::vector< unsigned char > *message, vo
 
 	if((int)message->at(0)==176)
 	{
-		if(beatstep_in>-1)
+		if(launchkeymini_in>-1)
+		{
+			if(mode==0 and (submode==0 or submode==1))
+			{
+				if((int)message->at(1)>20 and (int)message->at(1)<26)
+				{
+					for(int i=0;i<5;i++)
+					{
+						if((int)message->at(1)==21+i)
+						{
+							nextselpattern[i+5*seite2]=(int)((float)message->at(2)/127*16)-1;
+							if(playmode==0)
+							{
+								selpattern[i+5*seite2]=nextselpattern[i+5*seite2];
+							}
+						}
+					}
+				}
+			}
+			if(mode==0 and (submode==0 or submode==2))
+			{
+				if((int)message->at(1)==26)
+				{
+					bpm=(int)message->at(2)*2;
+				}
+				if((int)message->at(1)==104)
+				{
+					seite2=false;
+				}
+				if((int)message->at(1)==105)
+				{
+					seite2=true;
+				}
+			}
+			if(mode==0 and submode==2)
+			{
+				if((int)message->at(1)==21)
+				{
+					aktsongstep=(int)message->at(2)*2;
+				}
+			}
+			if(mode==0 and submode==1)
+			{
+				if((int)message->at(1)==26)
+				{
+					if(programedit==true)
+					{
+						akteditprogram=(int)message->at(2);
+					}
+					if(noteedit==true)
+					{
+						akteditnote=(int)message->at(2);
+					}
+				}
+				if((int)message->at(1)==27)
+				{
+					if(volumeedit==true)
+					{
+						akteditvolume=(int)message->at(2);
+					}
+				}
+			}
+		}
+/*		if(beatstep_in>-1)
 		{
 			if((int)message->at(1)==7)
 			{
@@ -797,9 +870,9 @@ void midiincallback( double deltatime, std::vector< unsigned char > *message, vo
 						selpatt=((int)message->at(2)-65)/3;
 				}
 			}
-		}
+		}*/
 	}
-	else if((int)message->at(0)==144)
+/*	else if((int)message->at(0)==144)
 	{
 		if(beatstep_in>-1)
 		{
@@ -872,7 +945,8 @@ void midiincallback( double deltatime, std::vector< unsigned char > *message, vo
 				wsmidi.Pause();
 			}
 		}
-	}
+	}*/
+	anzeige = true;
 	return;
 }
 
@@ -1124,10 +1198,6 @@ int main(int argc, char* argv[])
 	int aktbank[10] = {0,0,0,0,0,0,0,0,0,0};
 	int selsetmididevice = 0;
 	int seleditstep = 0;
-	int akteditnote = 60;
-	int akteditvolume = 127;
-	int seleditcommand = 0;
-	int akteditprogram = 0;
 	SDL_Rect selsetmidideviceRect;
 	selsetmidideviceRect.x = 5.5*scorex;
 	selsetmidideviceRect.y = 4.5*scorey;
@@ -1321,7 +1391,6 @@ int main(int argc, char* argv[])
 	int mousex = 0;
 	int mousey = 0;
 
-	bool anzeige = true;
 	bool blinkmode = false;
 	int blink = 0;
 
@@ -1329,9 +1398,7 @@ int main(int argc, char* argv[])
 	bool changesong = false;
 
 	SDL_Rect songnamePosition;
-
 	SDL_Rect patterndevicenamePosition;
-	
 	SDL_Rect pattdevicename_rect[5];
 
 	vector<unsigned char> message;
@@ -1395,6 +1462,10 @@ int main(int argc, char* argv[])
 			if(midiin->getPortName(i).substr(0,found)=="Launchpad")
 			{
 				launchpad_in=i;
+			}
+			if(midiin->getPortName(i).substr(0,found)=="Launchkey Mini")
+			{
+				launchkeymini_in=i;
 			}
 			if(midiin->getPortName(i).substr(0,found)=="VMPK Output")
 			{
@@ -2874,6 +2945,9 @@ int main(int argc, char* argv[])
 										noteonoff.aktiv=false;
 										noteon.aktiv=false;
 										noteoff.aktiv=false;
+										programedit = false;
+										noteedit = false;
+										volumeedit = false;
 									}
 									else
 									{
@@ -3097,6 +3171,9 @@ int main(int argc, char* argv[])
 									noteonoff.aktiv=false;
 									noteon.aktiv=false;
 									noteoff.aktiv=false;
+									programedit = true;
+									noteedit = false;
+									volumeedit = false;
 								}
 								else if(CheckMouse(mousex, mousey, noteonoff.button_rect)==true and edit.aktiv==true)
 								{
@@ -3105,6 +3182,9 @@ int main(int argc, char* argv[])
 									noteonoff.aktiv=true;
 									noteon.aktiv=false;
 									noteoff.aktiv=false;
+									programedit = false;
+									noteedit = true;
+									volumeedit = true;
 								}
 								else if(CheckMouse(mousex, mousey, noteon.button_rect)==true and edit.aktiv==true)
 								{
@@ -3113,6 +3193,9 @@ int main(int argc, char* argv[])
 									noteonoff.aktiv=false;
 									noteon.aktiv=true;
 									noteoff.aktiv=false;
+									programedit = false;
+									noteedit = true;
+									volumeedit = true;
 								}
 								else if(CheckMouse(mousex, mousey, noteoff.button_rect)==true and edit.aktiv==true)
 								{
@@ -3121,6 +3204,9 @@ int main(int argc, char* argv[])
 									noteonoff.aktiv=false;
 									noteon.aktiv=false;
 									noteoff.aktiv=true;
+									programedit = false;
+									noteedit = true;
+									volumeedit = false;
 								}
 								else if(CheckMouse(mousex, mousey, clear.button_rect)==true and edit.aktiv==true)
 								{
@@ -3129,6 +3215,9 @@ int main(int argc, char* argv[])
 									noteonoff.aktiv=false;
 									noteon.aktiv=false;
 									noteoff.aktiv=false;
+									programedit = false;
+									noteedit = false;
+									volumeedit = false;
 								}
 								else if(CheckMouse(mousex, mousey, edit.button_rect)==true)
 								{
@@ -3140,6 +3229,9 @@ int main(int argc, char* argv[])
 										noteonoff.aktiv=false;
 										noteon.aktiv=false;
 										noteoff.aktiv=false;
+										programedit = false;
+										noteedit = false;
+										volumeedit = false;
 									}
 									else
 									{
