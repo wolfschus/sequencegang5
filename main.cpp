@@ -492,11 +492,11 @@ public:
 		  {
 			  if(submode==1)
 			  {
-				  MidiCommand(selpattdevice, aktstep);
+				  MidiCommand(selpattdevice-seite2, aktstep);
 			  }
 			  else
 			  {
-				  for(int i=0;i<5;i++)
+				  for(int i=0;i<10;i++)
 				  {
 					  MidiCommand(i, aktstep);
 				  }
@@ -507,28 +507,39 @@ public:
 
 	void MidiCommand(int aktdev, int step)
 	{
-//		pattern[5][16][16][5][3];
+//		pattern[10][16][16][5][3];
+		int aktdev2 = 0;
+		
+		if(aktdev<5)
+		{
+			aktdev2 = aktdev;
+		}
+		else
+		{
+			aktdev2 = aktdev + 1;
+		}
+
 		for(int i=0;i<5;i++)
 		{
 			if(pattern[aktdev][selpattern[aktdev]][oldstep][i][0]==1)
 			{
-				NoteOff(aset[aktdev].mididevice,aset[aktdev].midichannel,pattern[aktdev][selpattern[aktdev]][oldstep][i][1]);
+				NoteOff(aset[aktdev2].mididevice,aset[aktdev2].midichannel,pattern[aktdev][selpattern[aktdev]][oldstep][i][1]);
 			}
 			if(pattern[aktdev][selpattern[aktdev]][step][i][0]==1)
 			{
-				NoteOn(aset[aktdev].mididevice,aset[aktdev].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1], pattern[aktdev][selpattern[aktdev]][step][i][2]);
+				NoteOn(aset[aktdev2].mididevice,aset[aktdev2].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1], pattern[aktdev][selpattern[aktdev]][step][i][2]);
 			}
 			if(pattern[aktdev][selpattern[aktdev]][step][i][0]==2)
 			{
-				NoteOn(aset[aktdev].mididevice,aset[aktdev].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1], pattern[aktdev][selpattern[aktdev]][step][i][2]);
+				NoteOn(aset[aktdev2].mididevice,aset[aktdev2].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1], pattern[aktdev][selpattern[aktdev]][step][i][2]);
 			}
 			if(pattern[aktdev][selpattern[aktdev]][step][i][0]==3)
 			{
-				NoteOff(aset[aktdev].mididevice,aset[aktdev].midichannel,pattern[aktdev][selpattern[aktdev]][step][i][1]);
+				NoteOff(aset[aktdev2].mididevice,aset[aktdev2].midichannel,pattern[aktdev][selpattern[aktdev]][step][i][1]);
 			}
 			if(pattern[aktdev][selpattern[aktdev]][step][i][0]==4)
 			{
-				ProgramChange(aset[aktdev].mididevice, aset[aktdev].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1]);
+				ProgramChange(aset[aktdev2].mididevice,aset[aktdev2].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1]);
 			}
 		}
 	}
@@ -1109,7 +1120,7 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	sqlite3_close(settingsdb);
-
+	
 	int aktbank[10] = {0,0,0,0,0,0,0,0,0,0};
 	int selsetmididevice = 0;
 	int seleditstep = 0;
@@ -1320,6 +1331,8 @@ int main(int argc, char* argv[])
 	SDL_Rect songnamePosition;
 
 	SDL_Rect patterndevicenamePosition;
+	
+	SDL_Rect pattdevicename_rect[5];
 
 	vector<unsigned char> message;
 	vector<unsigned char> inmessage;
@@ -1560,15 +1573,15 @@ int main(int argc, char* argv[])
 								{
 									boxColor(screen, 4*scorex+(2*i)*scorex+(2*scorex)*k/5+3,(5*scorey+(2*j)*scorey-3)-(((2*scorey-6)*pattern[j+5*seite2][selpattern[j+5*seite2]][i][k][2])/127), 4*scorex+(2*i)*scorex+(2*scorex)*(k+1)/5-3,5*scorey+(2*j)*scorey-3,0xFFFF8FFF);
 								}
-								if(pattern[j][selpattern[j+5*seite2]][i][k][0]==2)
+								if(pattern[j+5*seite2][selpattern[j+5*seite2]][i][k][0]==2)
 								{
 									boxColor(screen, 4*scorex+(2*i)*scorex+(2*scorex)*k/5+3,(5*scorey+(2*j)*scorey-3)-(((2*scorey-6)*pattern[j+5*seite2][selpattern[j+5*seite2]][i][k][2])/127), 4*scorex+(2*i)*scorex+(2*scorex)*(k+1)/5-3,5*scorey+(2*j)*scorey-3,0x8FFF8FFF);
 								}
-								if(pattern[j][selpattern[j+5*seite2]][i][k][0]==3)
+								if(pattern[j+5*seite2][selpattern[j+5*seite2]][i][k][0]==3)
 								{
 									boxColor(screen, 4*scorex+(2*i)*scorex+(2*scorex)*k/5+3,3*scorey+(2*j)*scorey+3, 4*scorex+(2*i)*scorex+(2*scorex)*(k+1)/5-3,5*scorey+(2*j)*scorey-3,0xFF8F8FFF);
 								}
-								if(pattern[j][selpattern[j+5*seite2]][i][k][0]==4)
+								if(pattern[j+5*seite2][selpattern[j+5*seite2]][i][k][0]==4)
 								{
 									boxColor(screen, 4*scorex+(2*i)*scorex+(2*scorex)*k/5+3,3*scorey+(2*j)*scorey+3, 4*scorex+(2*i)*scorex+(2*scorex)*(k+1)/5-3,5*scorey+(2*j)*scorey-3,0x8F8FFFFF);
 								}
@@ -1589,9 +1602,9 @@ int main(int argc, char* argv[])
 							}
 							boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x8F8F8FFF);
 
-							if(pattern[selpattdevice][selpattern[selpattdevice]][i][j][0]==1)
+							if(pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][0]==1)
 							{
-								boxColor(screen, 4*scorex+(2*i)*scorex+3,5*scorey+(2*j)*scorey-3-(((2*scorey-6)*pattern[selpattdevice][selpattern[selpattdevice]][i][j][2])/127),6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0xFFFF8FFF);
+								boxColor(screen, 4*scorex+(2*i)*scorex+3,5*scorey+(2*j)*scorey-3-(((2*scorey-6)*pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][2])/127),6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0xFFFF8FFF);
 								SDL_FreeSurface(text);
 								text = TTF_RenderText_Blended(fontextrasmall, "Note", blackColor);
 								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
@@ -1603,15 +1616,15 @@ int main(int argc, char* argv[])
 								textPosition.y = 3*scorey+(2*j)*scorey+6+text->h;
 								SDL_BlitSurface(text, 0, screen, &textPosition);
 								SDL_FreeSurface(text);
-								sprintf(tmp, "%s%d",note[pattern[selpattdevice][selpattern[selpattdevice]][i][j][1]-((pattern[selpattdevice][selpattern[selpattdevice]][i][j][1]/12)*12)],pattern[selpattdevice][selpattern[selpattdevice]][i][j][1]/12-2);
+								sprintf(tmp, "%s%d",note[pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]-((pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]/12)*12)],pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]/12-2);
 								text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
 								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
 								textPosition.y = 3*scorey+(2*j)*scorey+8+2*text->h;
 								SDL_BlitSurface(text, 0, screen, &textPosition);
 							}
-							if(pattern[selpattdevice][selpattern[selpattdevice]][i][j][0]==2)
+							if(pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][0]==2)
 							{
-								boxColor(screen, 4*scorex+(2*i)*scorex+3,5*scorey+(2*j)*scorey-3-(((2*scorey-6)*pattern[selpattdevice][selpattern[selpattdevice]][i][j][2])/127),6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x8FFF8FFF);
+								boxColor(screen, 4*scorex+(2*i)*scorex+3,5*scorey+(2*j)*scorey-3-(((2*scorey-6)*pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][2])/127),6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x8FFF8FFF);
 								SDL_FreeSurface(text);
 								text = TTF_RenderText_Blended(fontextrasmall, "Note", blackColor);
 								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
@@ -1623,13 +1636,13 @@ int main(int argc, char* argv[])
 								textPosition.y = 3*scorey+(2*j)*scorey+6+text->h;
 								SDL_BlitSurface(text, 0, screen, &textPosition);
 								SDL_FreeSurface(text);
-								sprintf(tmp, "%s%d",note[pattern[selpattdevice][selpattern[selpattdevice]][i][j][1]-((pattern[selpattdevice][selpattern[selpattdevice]][i][j][1]/12)*12)],pattern[selpattdevice][selpattern[selpattdevice]][i][j][1]/12-2);
+								sprintf(tmp, "%s%d",note[pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]-((pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]/12)*12)],pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]/12-2);
 								text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
 								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
 								textPosition.y = 3*scorey+(2*j)*scorey+8+2*text->h;
 								SDL_BlitSurface(text, 0, screen, &textPosition);
 							}
-							if(pattern[selpattdevice][selpattern[selpattdevice]][i][j][0]==3)
+							if(pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][0]==3)
 							{
 								boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0xFF8F8FFF);
 								SDL_FreeSurface(text);
@@ -1643,13 +1656,13 @@ int main(int argc, char* argv[])
 								textPosition.y = 3*scorey+(2*j)*scorey+6+text->h;
 								SDL_BlitSurface(text, 0, screen, &textPosition);
 								SDL_FreeSurface(text);
-								sprintf(tmp, "%s%d",note[pattern[selpattdevice][selpattern[selpattdevice]][i][j][1]-((pattern[selpattdevice][selpattern[selpattdevice]][i][j][1]/12)*12)],pattern[selpattdevice][selpattern[selpattdevice]][i][j][1]/12-2);
+								sprintf(tmp, "%s%d",note[pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]-((pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]/12)*12)],pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]/12-2);
 								text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
 								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
 								textPosition.y = 3*scorey+(2*j)*scorey+8+2*text->h;
 								SDL_BlitSurface(text, 0, screen, &textPosition);
 							}
-							if(pattern[selpattdevice][selpattern[selpattdevice]][i][j][0]==4)
+							if(pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][0]==4)
 							{
 								boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x8F8FFFFF);
 								SDL_FreeSurface(text);
@@ -1663,7 +1676,7 @@ int main(int argc, char* argv[])
 								textPosition.y = 3*scorey+(2*j)*scorey+6+text->h;
 								SDL_BlitSurface(text, 0, screen, &textPosition);
 								SDL_FreeSurface(text);
-								sprintf(tmp, "%d",pattern[selpattdevice][selpattern[selpattdevice]][i][j][1]+1);
+								sprintf(tmp, "%d",pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]+1);
 								text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
 								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
 								textPosition.y = 3*scorey+(2*j)*scorey+8+2*text->h;
@@ -1679,7 +1692,7 @@ int main(int argc, char* argv[])
 						{
 							if(edit.aktiv==true)
 							{
-								if(i==seleditstep and j==selpattdevice)
+								if(i==seleditstep and j==selpattdevice-6*seite2)
 								{
 									boxColor(screen, 4*scorex+(2*i)*scorex,3*scorey+(2*j)*scorey,6*scorex+(2*i)*scorex,5*scorey+(2*j)*scorey,0x00AF00FF);
 								}
@@ -1702,7 +1715,7 @@ int main(int argc, char* argv[])
 						// Control
 						if(edit.aktiv==true)
 						{
-							if(i==seleditstep and selpattdevice==10)
+							if(i==seleditstep and selpattdevice==11)
 							{
 								boxColor(screen, 4*scorex+(2*i)*scorex,4*scorey+(2*5)*scorey,6*scorex+(2*i)*scorex,6*scorey+(2*5)*scorey,0x00AF00FF);
 							}
@@ -1809,10 +1822,20 @@ int main(int argc, char* argv[])
 						pattern_aktpatt[i].show(screen, fontsmall);
 
 						SDL_FreeSurface(text);
-						text = TTF_RenderText_Blended(fontsmall, aset[i+6*seite2].name.c_str(), textColor);
+						if(i+6*seite2==selpattdevice and submode==1)
+						{
+							text = TTF_RenderText_Blended(fontsmall, aset[i+6*seite2].name.c_str(), greenColor);
+						}
+						else
+						{
+							text = TTF_RenderText_Blended(fontsmall, aset[i+6*seite2].name.c_str(), textColor);
+						}
 						textPosition.x = 7*scorex+6*i*scorex-text->w/2;
 						textPosition.y = 14*scorey-text->h;
 						SDL_BlitSurface(text, 0, screen, &textPosition);
+						pattdevicename_rect[i] = textPosition;
+						
+						
 
 					SDL_FreeSurface(text);
 					if(selpattern[i+5*seite2]==nextselpattern[i+5*seite2])
@@ -1862,7 +1885,7 @@ int main(int argc, char* argv[])
 					{
 						settings_up.show(screen, fontsmall);
 						settings_down.show(screen, fontsmall);
-						if(selpattdevice==10)
+						if(selpattdevice==11)
 						{
 							plusbpm.show(screen, fontsmall);
 						}
@@ -1935,14 +1958,7 @@ int main(int argc, char* argv[])
 						if(noteonoff.aktiv==true or noteon.aktiv==true or noteoff.aktiv)
 						{
 							SDL_FreeSurface(text);
-							if(aset[selpattdevice].midichannel==9 and aset[selpattdevice].mididevice==255)
-							{
-								text = TTF_RenderText_Blended(fontsmall, "Drum", textColor);
-							}
-							else
-							{
-								text = TTF_RenderText_Blended(fontsmall, "Note", textColor);
-							}	
+							text = TTF_RenderText_Blended(fontsmall, "Note", textColor);
 							textPosition.x = 17*scorex-text->w/2;
 							textPosition.y = 17*scorey-text->h;
 							SDL_BlitSurface(text, 0, screen, &textPosition);
@@ -2241,7 +2257,7 @@ int main(int argc, char* argv[])
 						SDL_BlitSurface(text, 0, screen, &textPosition);
 
 						SDL_FreeSurface(text);
-						sprintf(tmp, "%d",aset[i].midichannel+1);
+						sprintf(tmp, "%d",aset[i+6*seite2].midichannel+1);
 						text = TTF_RenderText_Blended(font, tmp, textColor);
 						textPosition.x = 33*scorex-text->w;
 						textPosition.y = 5*scorey+2*i*scorey;
@@ -2250,35 +2266,35 @@ int main(int argc, char* argv[])
 					else if (settingsmode==1 and i<5)
 					{
 						SDL_FreeSurface(text);
-						sprintf(tmp, "%d",aset[i].minprog);
+						sprintf(tmp, "%d",aset[i+6*seite2].minprog);
 						text = TTF_RenderText_Blended(font, tmp, textColor);
 						textPosition.x =10*scorex-text->w;
 						textPosition.y = 5*scorey+2*i*scorey;
 						SDL_BlitSurface(text, 0, screen, &textPosition);
 
 						SDL_FreeSurface(text);
-						sprintf(tmp, "%d",aset[i].maxprog);
+						sprintf(tmp, "%d",aset[i+6*seite2].maxprog);
 						text = TTF_RenderText_Blended(font, tmp, textColor);
 						textPosition.x = 16*scorex-text->w;
 						textPosition.y = 5*scorey+2*i*scorey;
 						SDL_BlitSurface(text, 0, screen, &textPosition);
 
 						SDL_FreeSurface(text);
-						sprintf(tmp, "%d",aset[i].minbank);
+						sprintf(tmp, "%d",aset[i+6*seite2].minbank);
 						text = TTF_RenderText_Blended(font, tmp, textColor);
 						textPosition.x = 22*scorex-text->w;
 						textPosition.y = 5*scorey+2*i*scorey;
 						SDL_BlitSurface(text, 0, screen, &textPosition);
 
 						SDL_FreeSurface(text);
-						sprintf(tmp, "%d",aset[i].maxbank);
+						sprintf(tmp, "%d",aset[i+6*seite2].maxbank);
 						text = TTF_RenderText_Blended(font, tmp, textColor);
 						textPosition.x = 28*scorex-text->w;
 						textPosition.y = 5*scorey+2*i*scorey;
 						SDL_BlitSurface(text, 0, screen, &textPosition);
 
 						SDL_FreeSurface(text);
-						sprintf(tmp, "%d",aset[i].midiinchannel+1);
+						sprintf(tmp, "%d",aset[i+6*seite2].midiinchannel+1);
 						text = TTF_RenderText_Blended(font, tmp, textColor);
 						textPosition.x = 34*scorex-text->w;
 						textPosition.y = 5*scorey+2*i*scorey;
@@ -2599,51 +2615,58 @@ int main(int argc, char* argv[])
 								save_song=0;
 								mode=6;
 							}
-							for(int i=0;i<5;i++)
+							if(submode==0 or submode==1)
 							{
-								if(CheckMouse(mousex, mousey, pattern_aktpatt[i].button_rect)==true)
+								for(int i=0;i<5;i++)
 								{
-									if(pattern_aktpatt[i].aktiv==true)
+									if(CheckMouse(mousex, mousey, pattern_aktpatt[i].button_rect)==true)
 									{
-										for(int i=0;i<5;i++)
+										if(pattern_aktpatt[i].aktiv==true)
 										{
-											pattern_aktpatt[i].aktiv=false;
+											for(int i=0;i<5;i++)
+											{
+												pattern_aktpatt[i].aktiv=false;
+											}
 										}
-									}
-									else
-									{
-										for(int i=0;i<5;i++)
+										else
 										{
-											pattern_aktpatt[i].aktiv=false;
+											for(int i=0;i<5;i++)
+											{
+												pattern_aktpatt[i].aktiv=false;
+											}
+											pattern_aktpatt[i].aktiv=true;
+											aktpatt=selpattern[i+5*seite2];
+											selpatt=i+5*seite2;
 										}
-										pattern_aktpatt[i].aktiv=true;
-										aktpatt=selpattern[i+5*seite2];
-										selpatt=i+5*seite2;
-									}
 
-								}
-								if(CheckMouse(mousex, mousey, pattern_up[i].button_rect)==true)
-								{
-									pattern_up[i].aktiv=true;
-									if(nextselpattern[i+5*seite2]<15)
-									{
-										nextselpattern[i+5*seite2]++;
 									}
-									if(playmode==0)
+									if(CheckMouse(mousex, mousey, pattern_up[i].button_rect)==true)
 									{
-										selpattern[i+5*seite2]=nextselpattern[i+5*seite2];
+										pattern_up[i].aktiv=true;
+										if(nextselpattern[i+5*seite2]<15)
+										{
+											nextselpattern[i+5*seite2]++;
+										}
+										if(playmode==0)
+										{
+											selpattern[i+5*seite2]=nextselpattern[i+5*seite2];
+										}
 									}
-								}
-								if(CheckMouse(mousex, mousey, pattern_down[i].button_rect)==true)
-								{
-									pattern_down[i].aktiv=true;
-									if(nextselpattern[i+5*seite2]>-1)
+									if(CheckMouse(mousex, mousey, pattern_down[i].button_rect)==true)
 									{
-										nextselpattern[i+5*seite2]--;
+										pattern_down[i].aktiv=true;
+										if(nextselpattern[i+5*seite2]>-1)
+										{
+											nextselpattern[i+5*seite2]--;
+										}
+										if(playmode==0)
+										{
+											selpattern[i+5*seite2]=nextselpattern[i+5*seite2];
+										}
 									}
-									if(playmode==0)
+									if(CheckMouse(mousex, mousey, pattdevicename_rect[i])==true)
 									{
-										selpattern[i+5*seite2]=nextselpattern[i+5*seite2];
+										selpattdevice=i+6*seite2;
 									}
 								}
 							}
@@ -2810,7 +2833,7 @@ int main(int argc, char* argv[])
 									int i = int((mousey/scorey-3)/2);
 									int j = int((mousex/scorex-4)/2);
 
-									selpattdevice = i;
+									selpattdevice = i+6*seite2;
 									seleditstep = j;
 									seleditcommand = 0;
 									submode=1;
@@ -2830,14 +2853,14 @@ int main(int argc, char* argv[])
 								{
 									int i = int((mousey/scorey-3)/2);
 									int j = int((mousex/scorex-4)/2);
-									selpattdevice = i;
+									selpattdevice = i+6*seite2;
 									seleditstep = j;
 									aktsongstep = aktsongstep/16*16+j;
 								}
 								else if(CheckMouse(mousex, mousey, controlrahmen)==true)
 								{
 									int j = int((mousex/scorex-4)/2);
-									selpattdevice = 10;
+									selpattdevice = 11;
 									seleditstep = j;
 									aktsongstep = aktsongstep/16*16+j;
 								}
@@ -2862,20 +2885,20 @@ int main(int argc, char* argv[])
 									if(CheckMouse(mousex, mousey, settings_up.button_rect)==true)
 									{
 										settings_up.aktiv=true;
-										if(songpatt[selpattdevice+5*seite2][aktsongstep]<16)
+										if(songpatt[selpattdevice-seite2][aktsongstep]<16)
 										{
-											songpatt[selpattdevice+5*seite2][aktsongstep]++;
+											songpatt[selpattdevice-seite2][aktsongstep]++;
 										}
 									}
 									else if(CheckMouse(mousex, mousey, settings_down.button_rect)==true)
 									{
 										settings_down.aktiv=true;
-										if(songpatt[selpattdevice+5*seite2][aktsongstep]>0)
+										if(songpatt[selpattdevice-seite2][aktsongstep]>0)
 										{
-											songpatt[selpattdevice+5*seite2][aktsongstep]--;
+											songpatt[selpattdevice-seite2][aktsongstep]--;
 										}
 									}
-									if(selpattdevice==10)
+									if(selpattdevice==11)
 									{
 										if(CheckMouse(mousex, mousey, plusbpm.button_rect)==true)
 										{
@@ -3130,37 +3153,37 @@ int main(int argc, char* argv[])
 									seleditstep = j;
 									seleditcommand = i;
 									
-									if(selpattern[selpattdevice]>=0)
+									if(selpattern[selpattdevice-seite2]>=0)
 									{
 										if(clear.aktiv==true and edit.aktiv==true)
 										{
-											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][0]=0;
-											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][1]=0;
-											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][2]=0;
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=0;
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=0;
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=0;
 										}
 										else if(noteonoff.aktiv==true and edit.aktiv==true)
 										{
-											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][0]=1;
-											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][1]=akteditnote;
-											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][2]=akteditvolume;
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=1;
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=akteditnote;
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=akteditvolume;
 										}
 										else if(noteon.aktiv==true and edit.aktiv==true)
 										{
-											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][0]=2;
-											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][1]=akteditnote;
-											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][2]=akteditvolume;
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=2;
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=akteditnote;
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=akteditvolume;
 										}
 										else if(noteoff.aktiv==true and edit.aktiv==true)
 										{
-											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][0]=3;
-											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][1]=akteditnote;
-											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][2]=0;
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=3;
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=akteditnote;
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=0;
 										}
 										else if(program.aktiv==true and edit.aktiv==true)
 										{
-											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][0]=4;
-											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][1]=akteditprogram;
-											pattern[selpattdevice][selpattern[selpattdevice]][seleditstep][seleditcommand][2]=0;
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=4;
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=akteditprogram;
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=0;
 										}
 									}
 								}
@@ -3304,30 +3327,25 @@ int main(int argc, char* argv[])
 									settings_up.aktiv=true;
 									if(selsetmididevice<6) // MidiOut
 									{
-										if(aset[selsetmididevice-1].mididevice==255)
+										if(aset[selsetmididevice-1+6*seite2].mididevice<midiout->getPortCount()-1)
 										{
-											aset[selsetmididevice-1].mididevice=0;
-											changesettings=true;
-										}
-										else if(aset[selsetmididevice-1].mididevice<midiout->getPortCount()-1)
-										{
-											aset[selsetmididevice-1].mididevice++;
+											aset[selsetmididevice-1+6*seite2].mididevice++;
 											changesettings=true;
 										}
 									}
 									else // MidiIn
 									{
-										if(aset[selsetmididevice-1].mididevice<midiin->getPortCount()-1)
+										if(aset[selsetmididevice-1+6*seite2].mididevice<midiin->getPortCount()-1)
 										{
-											aset[selsetmididevice-1].mididevice++;
+											aset[selsetmididevice-1+6*seite2].mididevice++;
 											changesettings=true;
 										}
 									}
 									if(selsetmidichannel>0)
 									{
-										if(aset[selsetmidichannel-1].midichannel<15)
+										if(aset[selsetmidichannel-1+6*seite2].midichannel<15)
 										{
-											aset[selsetmidichannel-1].midichannel++;
+											aset[selsetmidichannel-1+6*seite2].midichannel++;
 											changesettings=true;
 										}
 									}
@@ -3335,16 +3353,16 @@ int main(int argc, char* argv[])
 								else if(CheckMouse(mousex, mousey, settings_down.button_rect)==true)
 								{
 									settings_down.aktiv=true;
-									if(aset[selsetmididevice-1].mididevice>0 and aset[selsetmididevice-1].mididevice<255)
+									if(aset[selsetmididevice-1+6*seite2].mididevice>0 and aset[selsetmididevice-1].mididevice<255)
 									{
-										aset[selsetmididevice-1].mididevice--;
+										aset[selsetmididevice-1+6*seite2].mididevice--;
 										changesettings=true;
 									}
 									if(selsetmidichannel>0)
 									{
-										if(aset[selsetmidichannel-1].midichannel>0)
+										if(aset[selsetmidichannel-1+6*seite2].midichannel>0)
 										{
-											aset[selsetmidichannel-1].midichannel--;
+											aset[selsetmidichannel-1+6*seite2].midichannel--;
 											changesettings=true;
 										}
 									}
@@ -3569,7 +3587,7 @@ int main(int argc, char* argv[])
 
 									cout << "Schreibe in DB Song " << save_song-1 << endl;
 
-									for(int i=0;i<5;i++)
+									for(int i=0;i<10;i++)
 									{
 										for(int j=0;j<16;j++)
 										{
@@ -3596,7 +3614,6 @@ int main(int argc, char* argv[])
 										{
 											if(songpatt[i][j]>0)
 											{
-//												cout << i+10 << " " << j << " " << int(songpatt[i][j]) << endl;
 												sprintf(sql, "INSERT INTO Song%d (device,pattern,step) VALUES (%d,%d,%d);",save_song-1,i+10,songpatt[i][j],j);
 												if( sqlite3_exec(songsdb,sql,NULL,0,0) != SQLITE_OK)
 												{

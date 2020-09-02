@@ -26,4 +26,10 @@ I started developing a MIDI sequencer in 1987 on a Commodore 64. Then I ported t
 
 Databases:
 I have coosen SQLite for storing Song data and settings, because of possibility to port the program to Android easily ;-)
-Sond database is flexible, but the settings database is still rigid. I will be flexible about this over time. But it is not the highest priority. Please do not change the order. Adding entries does not work yet. Changes to the device names must still be made in the database.
+Song database is flexible, but the settings database is still rigid. I will be flexible about this over time. But it is not the highest priority. Please do not change the order. Adding entries does not work yet. Changes to the device names must still be made in the database.
+
+ToDo:
+- Midi In
+- Midi In Clock
+- Launchpad integration
+- Documentation
