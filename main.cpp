@@ -151,6 +151,7 @@ struct sysinfo memInfo;
 
 RtMidiOut *midiout = new RtMidiOut();
 RtMidiIn *midiin = new RtMidiIn();
+RtMidiIn *midiclock = new RtMidiIn();
 
 SDL_Event CPUevent;
 
@@ -915,7 +916,21 @@ void midiincallback( double deltatime, std::vector< unsigned char > *message, vo
 				}
 			}
 		}
+	}*/
+	anzeige = true;
+	return;
+}
+
+void midiinclockcallback( double deltatime, std::vector< unsigned char > *message, void *userData )
+{
+	unsigned int nBytes = message->size();
+	cout << "MidiClock: ";
+
+	for(unsigned int i=0;i<nBytes;i++)
+	{
+		cout << (int)message->at(i) << " ";
 	}
+	cout << endl;
 
 	if(clockmodeext==true)
 	{
@@ -945,11 +960,10 @@ void midiincallback( double deltatime, std::vector< unsigned char > *message, vo
 				wsmidi.Pause();
 			}
 		}
-	}*/
+	}
 	anzeige = true;
 	return;
 }
-
 
 bool CheckMouse(int mousex, int mousey, SDL_Rect Position)
 {
@@ -1481,6 +1495,15 @@ int main(int argc, char* argv[])
 		midiin->setCallback( &midiincallback );
 		// Don't ignore sysex, timing, or active sensing messages.
 		midiin->ignoreTypes( false, false, false );
+	}
+
+	// MIDI IN Clock Device
+	if(aset[11].mididevice<inPorts)
+	{
+		midiclock->openPort( aset[11].mididevice );
+		midiclock->setCallback( &midiinclockcallback );
+		// Don't ignore sysex, timing, or active sensing messages.
+		midiclock->ignoreTypes( false, false, false );
 	}
 
 // Launchpad
