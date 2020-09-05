@@ -28,6 +28,8 @@ Databases:
 I have coosen SQLite for storing Song data and settings, because of possibility to port the program to Android easily ;-)
 Song database is flexible, but the settings database is still rigid. I will be flexible about this over time. But it is not the highest priority. Please do not change the order. Adding entries does not work yet. Changes to the device names must still be made in the database.
 
+Midi Clock Out ist possible over device 12, but not exact. The best way ist to use Midi Clock In over device 12.
+
 ToDo:
 - additional MidiIn devices
 - Launchpad integration

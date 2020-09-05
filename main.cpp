@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 0.96 02.09.2020
+// Version     : 0.97 05.09.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux/Raspberry PI
 // License     : GNU General Public License v3.0
@@ -58,6 +58,7 @@
 #include "images/monitor.xpm"
 #include "images/plus.xpm"
 #include "images/minus.xpm"
+#include "images/clock.xpm"
 
 using namespace std;
 
@@ -94,7 +95,7 @@ vector <songsettings> songset;
 int aktstep=15;
 int aktsongstep=0;
 int oldstep=0;
-int miditick=0;
+int miditick=5;
 int oldmiditick=0;
 int timedivision=16;
 int maxstep = 15;
@@ -102,6 +103,7 @@ int bpm = 60;
 float bpmcorrect=1.00;
 bool timerrun=false;
 bool clockmodeext=false;
+bool clockmodemaster=false;
 bool exttimerrun = false;
 bool playsong = false;
 bool seite2 = false;
@@ -390,12 +392,24 @@ public:
 		timerrun=true;
 		aktstep=15;
 		aktsongstep=255;
+		if(clockmodemaster==true and playmode==0)
+		{
+			Clock_Start(aset[11].mididevice);
+		}
+		else if(clockmodemaster==true and playmode==2)
+		{
+			Clock_Cont(aset[11].mididevice);
+		}
 	}
 
 	void Pause()
 	{
 		playmode=2;
 		timerrun=false;
+		if(clockmodemaster==true and playmode==1)
+		{
+			Clock_Stop(aset[11].mididevice);
+		}
 
 	}
 
@@ -404,6 +418,11 @@ public:
 		playmode=0;
 		timerrun=false;
 		aktstep=15;
+		if(clockmodemaster==true and playmode==1)
+		{
+			Clock_Stop(aset[11].mididevice);
+		}
+
 //		aktsongstep=255;
 		for(int i=0;i<5;i++)
 		{
@@ -438,6 +457,11 @@ public:
 			miditick=0;
 		  oldstep=aktstep;
 		  aktstep++;
+	  		if(clockmodemaster==true and playmode==1)
+			{
+				Clock_Tick(aset[11].mididevice);
+			}
+
 /*			if(launchpad_out>-1)
 			{
 				if(oldstep<9)
@@ -512,6 +536,10 @@ public:
 				  }
 			  }
 		  }
+		if(clockmodemaster==true and playmode==1)
+		{
+			Clock_Tick(aset[11].mididevice);
+		}
 	  }
 	}
 
@@ -578,7 +606,7 @@ public:
    {
       while(1)
 	  {
-    	  usleep(60000000/(24*(bpm*bpmcorrect+60)));
+    	  usleep(60000000/(24*((bpm+60)*bpmcorrect)));
     	  if(timerrun==true and clockmodeext==false)
     	  {
     		  wsmidi.NextTick();
@@ -1188,6 +1216,7 @@ int main(int argc, char* argv[])
 	SDL_Surface* minus_image = IMG_ReadXPMFromArray(minus_xpm);
 	SDL_Surface* top_image = IMG_ReadXPMFromArray(go_top_xpm);
 	SDL_Surface* bottom_image = IMG_ReadXPMFromArray(go_bottom_xpm);
+	SDL_Surface* clock_image = IMG_ReadXPMFromArray(clock_xpm);
 
 	char tmp[256];
 
@@ -1315,6 +1344,7 @@ int main(int argc, char* argv[])
 	WSButton plusbpm(22,17,2,2,scorex,scorey,plus_image,"");
 	WSButton top(34,17,2,2,scorex,scorey,top_image,"");
 	WSButton bottom(34,17,2,2,scorex,scorey,bottom_image,"");
+	WSButton clock(10,19,2,2,scorex,scorey,clock_image,"");
 
 	songpattern.aktiv=true;
 
@@ -2038,6 +2068,7 @@ int main(int argc, char* argv[])
 						bpmcor10fb.show(screen, fontsmall);
 					}
 					extmidi.show(screen, fontsmall);
+					clock.show(screen, fontsmall);
 				}
 
 // Pattern Note
@@ -2900,12 +2931,29 @@ int main(int argc, char* argv[])
 									if(clockmodeext==false)
 									{
 										clockmodeext=true;
+										clockmodemaster=false;
 										extmidi.aktiv=true;
+										clock.aktiv=false;
 									}
 									else
 									{
 										clockmodeext=false;
 										extmidi.aktiv=false;
+									}
+								}
+								else if(CheckMouse(mousex, mousey, clock.button_rect)==true)
+								{
+									if(clockmodemaster==false)
+									{
+										clockmodemaster=true;
+										clockmodeext=false;
+										clock.aktiv=true;
+										extmidi.aktiv=false;
+									}
+									else
+									{
+										clockmodemaster=false;
+										clock.aktiv=false;
 									}
 								}
 								else if(CheckMouse(mousex, mousey, top.button_rect)==true)
