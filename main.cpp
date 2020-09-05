@@ -132,9 +132,7 @@ int akteditprogram = 0;
 
 int beatstep_in = -1;
 int vmpk_in = -1;
-int launchpad_in=-1;
 int beatstep_out = -1;
-int launchpad_out=-1;
 int launchkeymini_in = -1;
 
 timeval start, stop;
@@ -156,87 +154,6 @@ RtMidiIn *midiin = new RtMidiIn();
 RtMidiIn *midiclock = new RtMidiIn();
 
 SDL_Event CPUevent;
-
-class Launchpad
-{
-public:
-	void LPInit()
-	{
-		LPTest();
-		sleep(1);
-		LPReset();
-//		sleep(1);
-//		LPSetMode("drum");		
-		return;
-	}
-	
-	void LPReset()
-	{
-		vector<unsigned char> message;
-		midiout->openPort(launchpad_out);
-		message.clear();
-		message.push_back(176);
-		message.push_back(0);
-		message.push_back(0);
-		midiout->sendMessage( &message );
-		midiout->closePort();
-	}
-
-	void LPTest()
-	{
-		vector<unsigned char> message;
-		midiout->openPort(launchpad_out);
-		message.clear();
-		message.push_back(176);
-		message.push_back(0);
-		message.push_back(127);
-		midiout->sendMessage( &message );
-		midiout->closePort();
-	}
-
-	void LPPad(int pad, string color)
-	{
-		vector<unsigned char> message;
-		midiout->openPort(launchpad_out);
-		message.clear();
-		message.push_back(144);
-		message.push_back(pad);
-		if(color=="red")
-		{
-			message.push_back(15);
-		}
-		else
-		{
-			message.push_back(0);
-		}
-		
-		midiout->sendMessage( &message );
-		midiout->closePort();
-	}
-
-	void LPSetMode(string mode)
-	{
-		vector<unsigned char> message;
-		midiout->openPort(launchpad_out);
-		message.clear();
-		message.push_back(176);
-		message.push_back(0);
-		if(mode=="drum")
-		{
-			message.push_back(2);
-		}
-		else
-		{
-			message.push_back(1);
-		}
-		
-		midiout->sendMessage( &message );
-		midiout->closePort();
-	}
-	
-};
-
-Launchpad launchpad;
 
 class WSMidi
 {
@@ -428,17 +345,6 @@ public:
 		{
 			AllNotesOff(aset[i].mididevice,aset[i].midichannel);
 		}
-		if(launchpad_out>-1)
-		{
-			if(oldstep<9)
-			{
-				launchpad.LPPad(oldstep-1,"off");
-			}
-			else
-			{
-				launchpad.LPPad(oldstep+7,"off");
-			}
-		}
 	}
 
 	void NextTick()
@@ -461,27 +367,6 @@ public:
 			{
 				Clock_Tick(aset[11].mididevice);
 			}
-
-/*			if(launchpad_out>-1)
-			{
-				if(oldstep<9)
-				{
-					launchpad.LPPad(oldstep-1,"off");
-				}
-				else
-				{
-					launchpad.LPPad(oldstep+7,"off");
-				}
-				if(aktstep<9)
-				{
-					launchpad.LPPad(aktstep-1,"red");
-				}
-				else
-				{
-					launchpad.LPPad(aktstep+7,"red");
-				}
-			}
-*/			
 
 		  if(aktstep>maxstep)
 		  {
@@ -804,13 +689,13 @@ static int songpatternnamecallback(void* data, int argc, char** argv, char** azC
 void midiincallback( double deltatime, std::vector< unsigned char > *message, void *userData )
 {
 	unsigned int nBytes = message->size();
-	cout << "MidiIn: ";
+//	cout << "MidiIn: ";
 
 	for(unsigned int i=0;i<nBytes;i++)
 	{
 		cout << (int)message->at(i) << " ";
 	}
-	cout << endl;
+//	cout << endl;
 
 	SDL_PushEvent(&CPUevent);
 
@@ -952,13 +837,13 @@ void midiincallback( double deltatime, std::vector< unsigned char > *message, vo
 void midiinclockcallback( double deltatime, std::vector< unsigned char > *message, void *userData )
 {
 	unsigned int nBytes = message->size();
-	cout << "MidiClock: ";
+//	cout << "MidiClock: ";
 
 	for(unsigned int i=0;i<nBytes;i++)
 	{
 		cout << (int)message->at(i) << " ";
 	}
-	cout << endl;
+//	cout << endl;
 
 	if(clockmodeext==true)
 	{
@@ -1474,10 +1359,6 @@ int main(int argc, char* argv[])
 			{
 				beatstep_out=i;
 			}
-			if(midiout->getPortName(i).substr(0,found)=="Launchpad")
-			{
-				launchpad_out=i;
-			}
 		}
 	}
 
@@ -1502,10 +1383,6 @@ int main(int argc, char* argv[])
 			if(midiin->getPortName(i).substr(0,found)=="Arturia BeatStep")
 			{
 				beatstep_in=i;
-			}
-			if(midiin->getPortName(i).substr(0,found)=="Launchpad")
-			{
-				launchpad_in=i;
 			}
 			if(midiin->getPortName(i).substr(0,found)=="Launchkey Mini")
 			{
@@ -1534,12 +1411,6 @@ int main(int argc, char* argv[])
 		midiclock->setCallback( &midiinclockcallback );
 		// Don't ignore sysex, timing, or active sensing messages.
 		midiclock->ignoreTypes( false, false, false );
-	}
-
-// Launchpad
-	if(launchpad_out>-1)
-	{
-		launchpad.LPInit();
 	}
 
 // Anzeige
