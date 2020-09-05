@@ -32,5 +32,4 @@ Midi Clock Out ist possible over device 12, but not exact. The best way ist to u
 
 ToDo:
 - additional MidiIn devices
-- Launchpad integration
 - Documentation

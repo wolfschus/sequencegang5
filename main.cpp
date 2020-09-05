@@ -100,6 +100,7 @@ int oldmiditick=0;
 int timedivision=16;
 int maxstep = 15;
 int bpm = 60;
+int istbpm=0;
 float bpmcorrect=1.00;
 bool timerrun=false;
 bool clockmodeext=false;
@@ -359,7 +360,8 @@ public:
 			stop.tv_sec = start.tv_sec;
 			stop.tv_usec = start.tv_usec;
 			gettimeofday(&start,0);
-//			cout << ((start.tv_sec-stop.tv_sec)*1000000+start.tv_usec-stop.tv_usec)*4 << endl;
+			istbpm = 60000000/(((start.tv_sec-stop.tv_sec)*1000000+start.tv_usec-stop.tv_usec)*4);
+//			cout << istbpm << endl;
 			miditick=0;
 		  oldstep=aktstep;
 		  aktstep++;
@@ -1938,6 +1940,16 @@ int main(int argc, char* argv[])
 						bpmcorfb.show(screen, fontsmall);
 						bpmcor10fb.show(screen, fontsmall);
 					}
+					if(playmode==1)
+					{
+						SDL_FreeSurface(text);
+						sprintf(tmp, "%d",istbpm);
+						text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
+						textPosition.x = 23*scorex-text->w/2;
+						textPosition.y = 18*scorey-text->h/2;
+						SDL_BlitSurface(text, 0, screen, &textPosition);
+					}
+				
 					extmidi.show(screen, fontsmall);
 					clock.show(screen, fontsmall);
 				}
