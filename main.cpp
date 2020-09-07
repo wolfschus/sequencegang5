@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 0.97 05.09.2020
+// Version     : 0.98 07.09.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux/Raspberry PI
 // License     : GNU General Public License v3.0
@@ -130,6 +130,8 @@ int akteditnote = 60;
 int akteditvolume = 127;
 int seleditcommand = 0;
 int akteditprogram = 0;
+int aktchangedevname = 0;
+string tmpdevicename = "New Name";
 
 int beatstep_in = -1;
 int vmpk_in = -1;
@@ -1073,6 +1075,12 @@ int main(int argc, char* argv[])
 	controlrahmen.w = 32*scorex;
 	controlrahmen.h = 2*scorey;
 	
+	SDL_Rect devnamerahmen;
+	devnamerahmen.x = 0; 
+	devnamerahmen.y = 5*scorey;
+	devnamerahmen.w = 5*scorex;
+	devnamerahmen.h = 9*scorey;
+	
 	SDL_Surface* start_image = IMG_ReadXPMFromArray(media_playback_start_xpm);
 	SDL_Surface* stop_image = IMG_ReadXPMFromArray(media_playback_stop_xpm);
 	SDL_Surface* pause_image = IMG_ReadXPMFromArray(media_playback_pause_xpm);
@@ -1951,7 +1959,7 @@ int main(int argc, char* argv[])
 					}
 				
 					extmidi.show(screen, fontsmall);
-					clock.show(screen, fontsmall);
+//					clock.show(screen, fontsmall);
 				}
 
 // Pattern Note
@@ -2309,7 +2317,6 @@ int main(int argc, char* argv[])
 						SDL_BlitSurface(text, 0, screen, &textPosition);
 
 					}
-
 				}
 
 				if(seite2==true)
@@ -2381,6 +2388,50 @@ int main(int argc, char* argv[])
 
 				SDL_FreeSurface(text);
 				sprintf(tmp, "%s",songnametmp.c_str());
+				text = TTF_RenderText_Blended(font, tmp, textColor);
+				textPosition.x = screen->w/2-text->w/2;
+				textPosition.y = 5*scorey;
+				SDL_BlitSurface(text, 0, screen, &textPosition);
+
+				if(blinkmode==true)
+				{
+					SDL_Surface* texttmp;
+					texttmp = TTF_RenderText_Blended(font, "_", textColor);
+					textPosition.x = textPosition.x+text->w;
+					textPosition.y = 5*scorey;
+					SDL_BlitSurface(texttmp, 0, screen, &textPosition);
+				}
+
+				for(int i=0;i<40;i++)
+        		{
+        			if(key_shift.aktiv==false)
+        			{
+        				keyboard[i].show(screen, font);
+        			}
+        			else
+        			{
+        				shkeyboard[i].show(screen, font);
+        			}
+
+        		}
+        		key_shift.show(screen, font);
+        		key_space.show(screen, font);
+        		key_backspace.show(screen, font);
+
+				ok.show(screen, fontsmall);
+				cancel.show(screen, fontsmall);
+			}
+
+			if(mode==8)  // Change Devicename
+			{
+				SDL_FreeSurface(text);
+				text = TTF_RenderText_Blended(fontbold, "Change Devicename", textColor);
+				textPosition.x = screen->w/2-text->w/2;
+				textPosition.y = 2*scorey;
+				SDL_BlitSurface(text, 0, screen, &textPosition);
+
+				SDL_FreeSurface(text);
+				sprintf(tmp, "%s",tmpdevicename.c_str());
 				text = TTF_RenderText_Blended(font, tmp, textColor);
 				textPosition.x = screen->w/2-text->w/2;
 				textPosition.y = 5*scorey;
@@ -3329,6 +3380,18 @@ int main(int argc, char* argv[])
 								}
 								mode=0;
 							}
+							if(CheckMouse(mousex, mousey, devnamerahmen)==true)
+							{
+								int i = (((mousey/scorey)-4)/2);
+								
+								aktchangedevname = i+6*seite2;
+								tmpdevicename = aset[i+6*seite2].name;
+
+								cout << aktchangedevname << " : " << tmpdevicename << endl;
+								
+								mode=8;
+
+							}
 							if(CheckMouse(mousex, mousey, cancel.button_rect)==true)
 							{
 								mode=0;
@@ -3764,6 +3827,81 @@ int main(int argc, char* argv[])
 							{
 								mode=0;
 							}
+						}
+			        	else if(mode==8) // Change Devicename
+			        	{
+			        		for(int i=0;i<40;i++)
+			        		{
+			        			if(CheckMouse(mousex, mousey, keyboard[i].button_rect)==true)
+			        			{
+			        				if(key_shift.aktiv==false)
+			        				{
+										keyboard[i].aktiv=true;
+										if(tmpdevicename==" ")
+										{
+											tmpdevicename=keyboard[i].button_text;
+										}
+										else if(tmpdevicename.size()<22)
+										{
+											tmpdevicename = tmpdevicename + keyboard[i].button_text;
+										}
+			        				}
+			        			}
+			        			if(CheckMouse(mousex, mousey, shkeyboard[i].button_rect)==true)
+			        			{
+			        				if(key_shift.aktiv==true)
+			        				{
+										shkeyboard[i].aktiv=true;
+										keyboard[i].aktiv=true;
+										if(tmpdevicename==" ")
+										{
+											tmpdevicename=shkeyboard[i].button_text;
+										}
+										else if(tmpdevicename.size()<22)
+										{
+											tmpdevicename = tmpdevicename + shkeyboard[i].button_text;
+										}
+			        				}
+			        				key_shift.aktiv=false;
+			        			}
+			        		}
+			        		if(CheckMouse(mousex, mousey, key_shift.button_rect)==true)
+							{
+		        				if(key_shift.aktiv==true)
+		        				{
+		        					key_shift.aktiv=false;
+		        				}
+		        				else
+		        				{
+		        					key_shift.aktiv=true;
+		        				}
+							}
+			        		if(CheckMouse(mousex, mousey, key_space.button_rect)==true)
+							{
+			        			key_space.aktiv=true;
+								tmpdevicename = tmpdevicename + " ";
+							}
+			        		if(CheckMouse(mousex, mousey, key_backspace.button_rect)==true)
+							{
+			        			key_backspace.aktiv=true;
+								if(tmpdevicename.size()>1)
+								{
+									tmpdevicename.erase(tmpdevicename.end()-1);
+								}
+								else
+								{
+									tmpdevicename=" ";
+								}
+							}
+			        		if(CheckMouse(mousex, mousey, ok.button_rect)==true)
+							{
+			        			aset[aktchangedevname].name=tmpdevicename;
+								mode=3;
+							}
+			        		else if(CheckMouse(mousex, mousey, cancel.button_rect)==true)
+							{
+								mode=3;
+							}
 			        	}
 			        }
 					anzeige=true;
@@ -3776,7 +3914,7 @@ int main(int argc, char* argv[])
 				case SDL_MOUSEBUTTONUP:
 			        if( event.button.button == SDL_BUTTON_LEFT )
 			        {
-			        	if(mode==7)
+			        	if(mode==7 or mode==8)
 			        	{
 							for(int i=0;i<40;i++)
 							{
