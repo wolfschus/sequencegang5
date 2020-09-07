@@ -17,7 +17,7 @@ make
 
 To install:
 
-make setup (Directory ~/.sequencegang will created, db-files copied, only first time needed)
+make setup (Directory ~/.sequencegang5 will created, db-files copied, only first time needed)
 
 sudo make install
 
