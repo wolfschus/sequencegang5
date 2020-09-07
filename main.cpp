@@ -3324,12 +3324,13 @@ int main(int argc, char* argv[])
 									int i = 1;
 									for(seqsettings asettemp: aset)
 									{
-	//									sprintf(sql, "UPDATE settings SET name = \"%s\"  WHERE id = %d",asettemp.name,i);
-	//									if( sqlite3_exec(settingsdb,sql,NULL,0,0) != SQLITE_OK)
-	//									{
-	//										cout << "Fehler beim UPDATE: " << sqlite3_errmsg(settingsdb) << endl;
-	//										return 1;
-	//									}
+										sprintf(sql, "UPDATE settings SET name = \"%s\" WHERE id = %d",asettemp.name.c_str(),i);
+//										cout << sql << endl;
+										if( sqlite3_exec(settingsdb,sql,NULL,0,0) != SQLITE_OK)
+										{
+											cout << "Fehler beim UPDATE: " << sqlite3_errmsg(settingsdb) << endl;
+											return 1;
+										}
 										sprintf(sql, "UPDATE settings SET mididevice = \"%d\" WHERE id = %d",asettemp.mididevice,i);
 										if( sqlite3_exec(settingsdb,sql,NULL,0,0) != SQLITE_OK)
 										{
@@ -3896,6 +3897,7 @@ int main(int argc, char* argv[])
 			        		if(CheckMouse(mousex, mousey, ok.button_rect)==true)
 							{
 			        			aset[aktchangedevname].name=tmpdevicename;
+			        			changesettings=true;
 								mode=3;
 							}
 			        		else if(CheckMouse(mousex, mousey, cancel.button_rect)==true)
