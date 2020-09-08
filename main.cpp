@@ -577,6 +577,7 @@ class WSButton
 
 public:
 	bool aktiv;
+	bool selected;
 	SDL_Rect button_rect;
 	SDL_Rect image_rect;
 	SDL_Rect text_rect;
@@ -592,6 +593,7 @@ public:
 		button_width=2;
 		button_height=2;
 		aktiv = false;
+		selected = false;
 		button_rect.x = 0+3;
 		button_rect.y = 0+3;
 		button_rect.w = 2*48-6;
@@ -605,6 +607,7 @@ public:
 		button_width=width;
 		button_height=height;
 		aktiv = false;
+		selected = false;
 		button_rect.x = posx*scorex+3;
 		button_rect.y = posy*scorey+3;
 		button_rect.w = button_width*scorex-6;
@@ -616,6 +619,10 @@ public:
 		if(aktiv==true)
 		{
 			boxColor(screen, button_rect.x,button_rect.y,button_rect.x+button_rect.w,button_rect.y+button_rect.h,0x008F00FF);
+		}
+		else if(selected==true)
+		{
+			boxColor(screen, button_rect.x,button_rect.y,button_rect.x+button_rect.w,button_rect.y+button_rect.h,0xCFCF00FF);
 		}
 		else
 		{
@@ -1188,14 +1195,18 @@ int main(int argc, char* argv[])
 
 	SDL_Rect imagePosition;
 
-	WSButton start(32,19,2,2,scorex,scorey,start_image,"");
-	WSButton pause(32,19,2,2,scorex,scorey,pause_image,"");
-	WSButton stop(30,19,2,2,scorex,scorey,stop_image,"");
-	WSButton exit(0,19,2,2,scorex,scorey,exit_image,"");
-	WSButton info(2,19,2,2,scorex,scorey,info_image,"");
+	WSButton songpattern(0,17,2,2,scorex,scorey,monitor_image,"");
+	WSButton songs(2,17,2,2,scorex,scorey,songs_image,"");
 	WSButton settings(4,19,2,2,scorex,scorey,settings_image,"");
 	WSButton open(6,19,2,2,scorex,scorey,open_image,"");
 	WSButton save(8,19,2,2,scorex,scorey,save_image,"");
+	WSButton exit(0,19,2,2,scorex,scorey,exit_image,"");
+	WSButton info(2,19,2,2,scorex,scorey,info_image,"");
+
+
+	WSButton start(32,19,2,2,scorex,scorey,start_image,"");
+	WSButton pause(32,19,2,2,scorex,scorey,pause_image,"");
+	WSButton stop(30,19,2,2,scorex,scorey,stop_image,"");
 	WSButton program(16,19,2,2,scorex,scorey,NULL,"Prog");
 	WSButton noteonoff(18,19,2,2,scorex,scorey,NULL,"OnOff");
 	WSButton noteon(20,19,2,2,scorex,scorey,NULL,"On");
@@ -1217,8 +1228,6 @@ int main(int argc, char* argv[])
 	WSButton settings_up(24,19,2,2,scorex,scorey,up_image,"");
 	WSButton settings_down(26,19,2,2,scorex,scorey,down_image,"");
 	WSButton extmidi(10,17,2,2,scorex,scorey,plug_image,"");
-	WSButton songpattern(0,17,2,2,scorex,scorey,monitor_image,"");
-	WSButton songs(2,17,2,2,scorex,scorey,songs_image,"");
 	WSButton showpattern(4,17,2,2,scorex,scorey,pattern_image,"");
 	WSButton noteup(18,17,2,2,scorex,scorey,right_image,"");
 	WSButton notedown(14,17,2,2,scorex,scorey,left_image,"");
@@ -3252,35 +3261,61 @@ int main(int argc, char* argv[])
 									
 									if(selpattern[selpattdevice-seite2]>=0)
 									{
-										if(clear.aktiv==true and edit.aktiv==true)
+										if(pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]>0)
 										{
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=0;
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=0;
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=0;
+											if(clear.aktiv==true and edit.aktiv==true)
+											{
+												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=0;
+												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=0;
+												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=0;
+											}
+											if(noteonoff.aktiv==true and edit.aktiv==true)
+											{
+												akteditnote=pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1];
+												akteditvolume=pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2];
+											}
+											else if(noteon.aktiv==true and edit.aktiv==true)
+											{
+												akteditnote=pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1];
+												akteditvolume=pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2];
+											}
+											else if(noteoff.aktiv==true and edit.aktiv==true)
+											{
+												akteditnote=pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1];
+												akteditvolume=pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2];
+											}
+											else if(program.aktiv==true and edit.aktiv==true)
+											{
+												akteditnote=pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1];
+												akteditvolume=pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2];
+											}
 										}
-										else if(noteonoff.aktiv==true and edit.aktiv==true)
+										else
 										{
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=1;
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=akteditnote;
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=akteditvolume;
-										}
-										else if(noteon.aktiv==true and edit.aktiv==true)
-										{
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=2;
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=akteditnote;
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=akteditvolume;
-										}
-										else if(noteoff.aktiv==true and edit.aktiv==true)
-										{
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=3;
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=akteditnote;
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=0;
-										}
-										else if(program.aktiv==true and edit.aktiv==true)
-										{
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=4;
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=akteditprogram;
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=0;
+											if(noteonoff.aktiv==true and edit.aktiv==true)
+											{
+												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=1;
+												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=akteditnote;
+												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=akteditvolume;
+											}
+											else if(noteon.aktiv==true and edit.aktiv==true)
+											{
+												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=2;
+												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=akteditnote;
+												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=akteditvolume;
+											}
+											else if(noteoff.aktiv==true and edit.aktiv==true)
+											{
+												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=3;
+												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=akteditnote;
+												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=0;
+											}
+											else if(program.aktiv==true and edit.aktiv==true)
+											{
+												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=4;
+												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=akteditprogram;
+												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=0;
+											}
 										}
 									}
 								}
