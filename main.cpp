@@ -114,6 +114,7 @@ bool noteedit = false;
 bool volumeedit = false;
 int mode = 0;
 int submode = 2;
+int menumode = 0;		// 0 - Hauptmenu, 1 - Untermenu, 2 - Raster
 int settingsmode = 0;
 int selpattdevice = 0;
 int selpattern[10] = {0,0,0,0,0,0,0,0,0,0};
@@ -132,6 +133,9 @@ int seleditcommand = 0;
 int akteditprogram = 0;
 int aktchangedevname = 0;
 string tmpdevicename = "New Name";
+int isselected=-1;
+char dbpath[512];
+
 
 int beatstep_in = -1;
 int vmpk_in = -1;
@@ -616,13 +620,13 @@ public:
 
 	void show(SDL_Surface* screen, TTF_Font* font)
 	{
+		if(selected==true and aktiv==false)
+		{
+			boxColor(screen, button_rect.x-3,button_rect.y-3,button_rect.x+button_rect.w+3,button_rect.y+button_rect.h+3,0x008F00FF);
+		}
 		if(aktiv==true)
 		{
 			boxColor(screen, button_rect.x,button_rect.y,button_rect.x+button_rect.w,button_rect.y+button_rect.h,0x008F00FF);
-		}
-		else if(selected==true)
-		{
-			boxColor(screen, button_rect.x,button_rect.y,button_rect.x+button_rect.w,button_rect.y+button_rect.h,0xCFCF00FF);
 		}
 		else
 		{
@@ -936,7 +940,7 @@ bool Clearsongpattern()
 
 int LoadScene(int nr)
 {
-	// Load SongDB
+	// Load Song
 	Clearpattern();
 	Clearsongpattern();
 	sqlite3 *songsdb;
@@ -963,6 +967,104 @@ int LoadScene(int nr)
 	return 0;
 }
 
+bool LoadSongDB()
+{
+	// Load SongDB
+	songset.clear();
+	sqlite3 *songsdb;
+	sprintf(dbpath, "%s/.sequencegang5/songs.db", getenv("HOME"));
+	if(sqlite3_open(dbpath, &songsdb) != SQLITE_OK)
+	{
+		cout << "Fehler beim Öffnen: " << sqlite3_errmsg(songsdb) << endl;
+		return 1;
+	}
+	cout << "Songsdatenbank erfolgreich geöffnet!" << endl;
+	sprintf(sql, "SELECT * FROM settings");
+	if( sqlite3_exec(songsdb,sql,songpatternnamecallback,0,0) != SQLITE_OK)
+	{
+		cout << "Fehler beim SELECT: " << sqlite3_errmsg(songsdb) << endl;
+		return 1;
+	}
+	sqlite3_close(songsdb);
+	return true;
+}
+
+bool SaveSongDB(int save_song)
+{
+	// Save SongDB
+	sqlite3 *songsdb;
+	sprintf(dbpath, "%s/.sequencegang5/songs.db", getenv("HOME"));
+	if(sqlite3_open(dbpath, &songsdb) != SQLITE_OK)
+	{
+		cout << "Fehler beim Öffnen: " << sqlite3_errmsg(songsdb) << endl;
+		return 1;
+	}
+	cout << "Songsdatenbank erfolgreich geöffnet!" << endl;
+
+	sprintf(sql, "UPDATE settings SET name = \"%s\" WHERE id = %d",songname.c_str(),save_song);
+	if( sqlite3_exec(songsdb,sql,NULL,0,0) != SQLITE_OK)
+	{
+		cout << "Fehler beim UPDATE: " << sqlite3_errmsg(songsdb) << endl;
+		return 1;
+	}
+	sprintf(sql, "UPDATE settings SET bpm = \"%d\" WHERE id = %d",bpm+60,save_song);
+	if( sqlite3_exec(songsdb,sql,NULL,0,0) != SQLITE_OK)
+	{
+		cout << "Fehler beim UPDATE: " << sqlite3_errmsg(songsdb) << endl;
+		return 1;
+	}
+
+	sprintf(sql, "DELETE FROM Song%d",save_song-1);
+	if( sqlite3_exec(songsdb,sql,NULL,0,0) != SQLITE_OK)
+	{
+		cout << "Fehler beim DELETE: " << sqlite3_errmsg(songsdb) << endl;
+		return 1;
+	}
+
+	cout << "Schreibe in DB Song " << save_song-1 << endl;
+
+	for(int i=0;i<10;i++)
+	{
+		for(int j=0;j<16;j++)
+		{
+			for(int k=0;k<16;k++)
+			{
+				for(int l=0;l<5;l++)
+				{
+					if(pattern[i][j][k][l][0]>0)
+					{
+						sprintf(sql, "INSERT INTO Song%d (device,pattern,step,pos,command,data1,data2) VALUES (%d,%d,%d,%d,%d,%d,%d);",save_song-1,i,j,k,l,pattern[i][j][k][l][0],pattern[i][j][k][l][1],pattern[i][j][k][l][2]);
+						if( sqlite3_exec(songsdb,sql,NULL,0,0) != SQLITE_OK)
+						{
+							cout << "Fehler beim INSERT: " << sqlite3_errmsg(songsdb) << endl;
+							return 1;
+						}
+					}
+				}
+			}
+		}
+	}
+	for(int i=0;i<11;i++)
+	{
+		for(int j=0;j<256;j++)
+		{
+			if(songpatt[i][j]>0)
+			{
+				sprintf(sql, "INSERT INTO Song%d (device,pattern,step) VALUES (%d,%d,%d);",save_song-1,i+10,songpatt[i][j],j);
+				if( sqlite3_exec(songsdb,sql,NULL,0,0) != SQLITE_OK)
+				{
+					cout << "Fehler beim INSERT: " << sqlite3_errmsg(songsdb) << endl;
+					return 1;
+				}
+				
+			} 
+			
+		}
+	}
+	sqlite3_close(songsdb);
+	return true;
+}
+	
 int main(int argc, char* argv[])
 {
 	bool debug=false;
@@ -1123,7 +1225,6 @@ int main(int argc, char* argv[])
 	char tmp[256];
 
 	// Load SettingsDB
-	char dbpath[512];
 	sprintf(dbpath, "%s/.sequencegang5/settings.db", getenv("HOME"));
 	sqlite3 *settingsdb;
 	if(sqlite3_open(dbpath, &settingsdb) != SQLITE_OK)
@@ -1197,12 +1298,16 @@ int main(int argc, char* argv[])
 
 	WSButton songpattern(0,17,2,2,scorex,scorey,monitor_image,"");
 	WSButton songs(2,17,2,2,scorex,scorey,songs_image,"");
+	WSButton showpattern(4,17,2,2,scorex,scorey,pattern_image,"");
+	WSButton exit(0,19,2,2,scorex,scorey,exit_image,"");
+	WSButton info(2,19,2,2,scorex,scorey,info_image,"");
 	WSButton settings(4,19,2,2,scorex,scorey,settings_image,"");
 	WSButton open(6,19,2,2,scorex,scorey,open_image,"");
 	WSButton save(8,19,2,2,scorex,scorey,save_image,"");
-	WSButton exit(0,19,2,2,scorex,scorey,exit_image,"");
-	WSButton info(2,19,2,2,scorex,scorey,info_image,"");
+	
 
+	WSButton ok(16,19,2,2,scorex,scorey,ok_image,"");
+	WSButton cancel(18,19,2,2,scorex,scorey,cancel_image,"");
 
 	WSButton start(32,19,2,2,scorex,scorey,start_image,"");
 	WSButton pause(32,19,2,2,scorex,scorey,pause_image,"");
@@ -1221,14 +1326,11 @@ int main(int argc, char* argv[])
 	WSButton bpmcorff(30,17,2,2,scorex,scorey,right_image,"");
 	WSButton bpmcorfb(26,17,2,2,scorex,scorey,left_image,"");
 	WSButton bpmcor10fb(24,17,2,2,scorex,scorey,first_image,"");
-	WSButton ok(16,19,2,2,scorex,scorey,ok_image,"");
-	WSButton cancel(18,19,2,2,scorex,scorey,cancel_image,"");
 	WSButton settings_next(34,19,2,2,scorex,scorey,next_image,"");
 	WSButton settings_prev(34,19,2,2,scorex,scorey,prev_image,"");
 	WSButton settings_up(24,19,2,2,scorex,scorey,up_image,"");
 	WSButton settings_down(26,19,2,2,scorex,scorey,down_image,"");
 	WSButton extmidi(10,17,2,2,scorex,scorey,plug_image,"");
-	WSButton showpattern(4,17,2,2,scorex,scorey,pattern_image,"");
 	WSButton noteup(18,17,2,2,scorex,scorey,right_image,"");
 	WSButton notedown(14,17,2,2,scorex,scorey,left_image,"");
 	WSButton oktaveup(20,17,2,2,scorex,scorey,last_image,"");
@@ -1251,6 +1353,7 @@ int main(int argc, char* argv[])
 	WSButton clock(10,19,2,2,scorex,scorey,clock_image,"");
 
 	songpattern.aktiv=true;
+	songpattern.selected=true;
 
 	vector <WSButton> pattern_up;
 	vector <WSButton> pattern_down;
@@ -2135,8 +2238,6 @@ int main(int argc, char* argv[])
 					SDL_BlitSurface(text, 0, screen, &textPosition);
 					i++;
 				}
-				
-
 				ok.show(screen, fontsmall);
 			}
 
@@ -2491,40 +2592,631 @@ int main(int argc, char* argv[])
 					break;
 				case SDL_KEYDOWN:
 					keyPressed[event.key.keysym.sym] = true;
-					if(keyPressed[SDLK_ESCAPE])
+					if(event.key.keysym.sym==SDLK_DOWN or event.key.keysym.sym==SDLK_KP2)
 					{
-						run = false;        // Programm beenden.
-					}
-					if(event.key.keysym.sym==SDLK_DOWN)
-					{
-						if(seleditcommand<4)
+						if(mode==0)
 						{
-							seleditcommand++;
+							if(menumode==0)
+							{
+								if(songpattern.selected==true)
+								{
+									songpattern.selected=false;
+									exit.selected=true;
+								}
+								if(songs.selected==true)
+								{
+									songs.selected=false;
+									info.selected=true;
+								}
+								if(showpattern.selected==true)
+								{
+									showpattern.selected=false;
+									settings.selected=true;
+								}
+							}
+							else if(menumode==2)
+							{
+								if(seleditcommand<4)
+								{
+									seleditcommand++;
+								}
+							}
+						}
+						else if(mode==4 or mode==6)
+						{
+							isselected=-1;
+							for(int i=0;i<16;i++)
+							{
+								if(load_song[i].aktiv==true)
+								{
+									isselected=i;
+								}
+							}
+							if(isselected==-1)
+							{
+								load_song[0].aktiv=true;
+							}
+							else if(isselected<16)
+							{
+								load_song[isselected].aktiv=false;
+								load_song[isselected+1].aktiv=true;
+							}
+						}
+						else if(mode==7 or mode==8)
+						{
+							for(int i=0;i<40;i++)
+							{
+								if(keyboard[i].selected==true)
+								{
+									isselected=i;
+								}
+							}
+							if(isselected<30)
+							{
+								keyboard[isselected].selected=false;
+								keyboard[isselected+10].selected=true;
+								shkeyboard[isselected].selected=false;
+								shkeyboard[isselected+10].selected=true;
+							}
+							else if(isselected>29 and isselected<32)
+							{
+								keyboard[isselected].selected=false;
+								shkeyboard[isselected].selected=false;
+								key_shift.selected=true;
+							}
+							else if(isselected>31 and isselected<38)
+							{
+								keyboard[isselected].selected=false;
+								shkeyboard[isselected].selected=false;
+								key_space.selected=true;
+							}
+							else if(isselected>37)
+							{
+								keyboard[isselected].selected=false;
+								shkeyboard[isselected].selected=false;
+								key_backspace.selected=true;
+							}
 						}
 					}
-					if(event.key.keysym.sym==SDLK_UP)
+					else if(event.key.keysym.sym==SDLK_UP or event.key.keysym.sym==SDLK_KP8)
 					{
-						if(seleditcommand>0)
+						if(mode==0)
 						{
-							seleditcommand--;
+							if(menumode==0)
+							{
+								if(exit.selected==true)
+								{
+									exit.selected=false;
+									songpattern.selected=true;
+								}
+								if(info.selected==true)
+								{
+									info.selected=false;
+									songs.selected=true;
+								}
+								if(settings.selected==true)
+								{
+									settings.selected=false;
+									showpattern.selected=true;
+								}
+							}
+							else if(menumode==2)
+							{
+								if(seleditcommand>0)
+								{
+									seleditcommand--;
+								}
+							}
+						}
+						else if(mode==4 or mode==6)
+						{
+							isselected=-1;
+							for(int i=0;i<16;i++)
+							{
+								if(load_song[i].aktiv==true)
+								{
+									isselected=i;
+								}
+							}
+							if(isselected==-1)
+							{
+								load_song[0].aktiv=true;
+							}
+							else if(isselected>0)
+							{
+								load_song[isselected].aktiv=false;
+								load_song[isselected-1].aktiv=true;
+							}
+						}
+						else if(mode==7 or mode==8)
+						{
+							for(int i=0;i<40;i++)
+							{
+								if(keyboard[i].selected==true)
+								{
+									isselected=i;
+								}
+							}
+							if(key_shift.selected==true)
+							{
+								key_shift.selected=false;
+								keyboard[30].selected=true;
+								shkeyboard[30].selected=true;
+							}
+							else if(key_space.selected==true)
+							{
+								key_space.selected=false;
+								keyboard[33].selected=true;
+								shkeyboard[33].selected=true;
+							}
+							else if(key_backspace.selected==true)
+							{
+								key_backspace.selected=false;
+								keyboard[39].selected=true;
+								shkeyboard[39].selected=true;
+							}
+							else if(isselected>9)
+							{
+								keyboard[isselected].selected=false;
+								keyboard[isselected-10].selected=true;
+								shkeyboard[isselected].selected=false;
+								shkeyboard[isselected-10].selected=true;
+							}
 						}
 					}
-					if(event.key.keysym.sym==SDLK_RIGHT)
+					else if(event.key.keysym.sym==SDLK_RIGHT or event.key.keysym.sym==SDLK_KP6)
 					{
-						if(seleditstep<15)
+						if(mode==0)
 						{
-							seleditstep++;
+							if(menumode==0)
+							{
+								if(songs.selected==true)
+								{
+									songs.selected=false;
+									showpattern.selected=true;
+								}
+								if(songpattern.selected==true)
+								{
+									songpattern.selected=false;
+									songs.selected=true;
+								}
+								if(open.selected==true)
+								{
+									open.selected=false;
+									save.selected=true;
+								}
+								if(settings.selected==true)
+								{
+									settings.selected=false;
+									open.selected=true;
+								}
+								if(info.selected==true)
+								{
+									info.selected=false;
+									settings.selected=true;
+								}
+								if(exit.selected==true)
+								{
+									exit.selected=false;
+									info.selected=true;
+								}
+							}
+							else if(menumode==2)
+							{
+								if(seleditstep<15)
+								{
+									seleditstep++;
+								}
+							}
+						}
+						else if(mode==7 or mode==8)
+						{
+							for(int i=0;i<40;i++)
+							{
+								if(keyboard[i].selected==true)
+								{
+									isselected=i;
+								}
+							}
+							if(key_shift.selected==true)
+							{
+								key_shift.selected=false;
+								key_space.selected=true;
+							}
+							else if(key_space.selected==true)
+							{
+								key_space.selected=false;
+								key_backspace.selected=true;
+							}
+							else if(key_backspace.selected==true)
+							{
+								key_backspace.selected=false;
+								keyboard[0].selected=true;
+								shkeyboard[0].selected=true;
+							}
+							else if(isselected<39)
+							{
+								keyboard[isselected].selected=false;
+								keyboard[isselected+1].selected=true;
+								shkeyboard[isselected].selected=false;
+								shkeyboard[isselected+1].selected=true;
+							}
+							else
+							{
+								keyboard[39].selected=false;
+								shkeyboard[39].selected=false;
+								key_shift.selected=true;
+							}
 						}
 					}
-					if(event.key.keysym.sym==SDLK_LEFT)
+					else if(event.key.keysym.sym==SDLK_LEFT or event.key.keysym.sym==SDLK_KP4)
 					{
-						if(seleditstep>0)
+						if(mode==0)
 						{
-							seleditstep--;
+							if(menumode==0)
+							{
+								if(songs.selected==true)
+								{
+									songs.selected=false;
+									songpattern.selected=true;
+								}
+								if(showpattern.selected==true)
+								{
+									showpattern.selected=false;
+									songs.selected=true;
+								}
+								if(info.selected==true)
+								{
+									info.selected=false;
+									exit.selected=true;
+								}
+								if(settings.selected==true)
+								{
+									settings.selected=false;
+									info.selected=true;
+								}
+								if(open.selected==true)
+								{
+									open.selected=false;
+									settings.selected=true;
+								}
+								if(save.selected==true)
+								{
+									save.selected=false;
+									open.selected=true;
+								}
+							}
+							else if(menumode==2)
+							{
+								if(seleditstep>0)
+								{
+									seleditstep--;
+								}
+							}
+						}
+						else if(mode==7 or mode==8)
+						{
+							for(int i=0;i<40;i++)
+							{
+								if(keyboard[i].selected==true)
+								{
+									isselected=i;
+								}
+							}
+							if(key_shift.selected==true)
+							{
+								key_shift.selected=false;
+								keyboard[39].selected=true;
+								shkeyboard[39].selected=true;
+							}
+							else if(key_space.selected==true)
+							{
+								key_space.selected=false;
+								key_shift.selected=true;
+							}
+							else if(key_backspace.selected==true)
+							{
+								key_backspace.selected=false;
+								key_space.selected=true;
+							}
+							else if(isselected>0)
+							{
+								keyboard[isselected].selected=false;
+								keyboard[isselected-1].selected=true;
+								shkeyboard[isselected].selected=false;
+								shkeyboard[isselected-1].selected=true;
+							}
+							else
+							{
+								keyboard[0].selected=false;
+								shkeyboard[0].selected=false;
+								key_backspace.selected=true;
+							}
 						}
 					}
-					
+					else if(event.key.keysym.sym==SDLK_KP_MULTIPLY)
+					{
+						mode=7;
+					}
+					else if(event.key.keysym.sym==SDLK_KP_PLUS)
+					{
+						if(mode==7)
+						{
+							for(int i=0;i<40;i++)
+							{
+								if(keyboard[i].selected==true)
+								{
+									isselected=i;
+								}
+							}
+							if(key_shift.selected==true)
+							{
+		        				if(key_shift.aktiv==true)
+		        				{
+		        					key_shift.aktiv=false;
+		        				}
+		        				else
+		        				{
+		        					key_shift.aktiv=true;
+		        				}
+							}
+							else if(key_space.selected==true)
+							{
+								songnametmp=songnametmp+" ";
+							}
+							else if(key_backspace.selected==true)
+							{
+								if(songnametmp.size()>1)
+								{
+									songnametmp.erase(songnametmp.end()-1);
+								}
+								else
+								{
+									songnametmp=" ";
+								}
+							}
+							else if(isselected>-1)
+							{
+								if(key_shift.aktiv==true)
+								{
+									songnametmp=songnametmp+shkeyboard[isselected].button_text;
+								}
+								else
+								{
+									songnametmp=songnametmp+keyboard[isselected].button_text;
+								}
+							}
+						}
+						if(mode==8)
+						{
+							for(int i=0;i<40;i++)
+							{
+								if(keyboard[i].selected==true)
+								{
+									isselected=i;
+								}
+							}
+							if(key_shift.selected==true)
+							{
+		        				if(key_shift.aktiv==true)
+		        				{
+		        					key_shift.aktiv=false;
+		        				}
+		        				else
+		        				{
+		        					key_shift.aktiv=true;
+		        				}
+							}
+							else if(key_space.selected==true)
+							{
+								tmpdevicename=tmpdevicename+" ";
+							}
+							else if(key_backspace.selected==true)
+							{
+								if(tmpdevicename.size()>1)
+								{
+									tmpdevicename.erase(tmpdevicename.end()-1);
+								}
+								else
+								{
+									tmpdevicename=" ";
+								}
+							}
+							else if(isselected>-1)
+							{
+								if(key_shift.aktiv==true)
+								{
+									tmpdevicename=tmpdevicename+shkeyboard[isselected].button_text;
+								}
+								else
+								{
+									tmpdevicename=tmpdevicename+keyboard[isselected].button_text;
+								}
+							}
+						}
+					}
+					else if(event.key.keysym.sym==SDLK_RETURN or event.key.keysym.sym==SDLK_KP_ENTER)
+					{
+						if(mode==0)
+						{
+							if(menumode==0)
+							{
+								if(songpattern.selected==true)
+								{
+									songpattern.aktiv=true;
+									songs.aktiv=false;
+									showpattern.aktiv=false;
+									submode=2;
+								}
+								if(songs.selected==true)
+								{
+									songpattern.aktiv=false;
+									songs.aktiv=true;
+									showpattern.aktiv=false;
+									submode=0;
+								}
+								if(showpattern.selected==true)
+								{
+									songpattern.aktiv=false;
+									songs.aktiv=false;
+									showpattern.aktiv=true;
+									submode=1;
+								}
+								if(info.selected==true)
+								{
+									mode=1;
+								}
+								if(exit.selected==true)
+								{
+									mode=2;
+								}
+								if(settings.selected==true)
+								{
+									mode=3;
+								}
+								if(open.selected==true)
+								{
+									LoadSongDB();
+
+									for(int i=0;i<16;i++)
+									{
+										load_song[i].button_text = songset[i].name;
+									}
+
+									if(aktsong>0)
+									{
+										for(int i=0;i<16;i++)
+										{
+											load_song[i].aktiv=false;
+											if(i+1==aktsong)
+											{
+												load_song[i].aktiv=true;
+											}
+										}
+									}
+									mode=4;
+								}
+								if(save.selected==true)
+								{
+									LoadSongDB();
+
+									for(int i=0;i<16;i++)
+									{
+										load_song[i].button_text = songset[i].name;
+									}
+									save_song=0;
+									mode=6;
+								}
+							}
+						}
+						else if(mode==1)
+						{
+							mode=0;
+						}
+						else if(mode==2)
+						{
+							run = false;        // Programm beenden.
+						}
+						else if(mode==4)
+						{
+							for(int i=0;i<16;i++)
+							{
+								if(load_song[i].aktiv==true)
+								{
+									LoadScene(i);
+								}
+							}
+							mode=0;
+						}
+						else if(mode==6)
+						{
+							{
+			        			for(int i=0;i<16;i++)
+			        			{
+			        				if(load_song[i].aktiv==true)
+			        				{
+			        					save_song=i+1;
+			        				}
+			        			}
+			        			if(save_song>0)
+			        			{
+									SaveSongDB(save_song);
+			        			}
+							}
+							mode=0;
+						}
+						else if(mode==7)
+						{
+							songname=songnametmp;
+							mode=0;
+						}
+						else if(mode==8)
+						{
+							aset[aktchangedevname].name=tmpdevicename;
+							changesettings=true;
+							mode=3;
+						}
+					}
+					else if(keyPressed[SDLK_ESCAPE])
+					{
+						if(mode!=0)
+						{
+							mode=0;
+						}
+						else
+						{
+							run = false;        // Programm beenden.
+						}
+					}
+					else if(keyPressed[SDLK_SPACE])
+					{
+						if(mode==7)
+						{
+							songnametmp = songnametmp + " ";
+						}
+						if(mode==8)
+						{
+							tmpdevicename = tmpdevicename + " ";
+						}
+					}
+					else if(keyPressed[SDLK_BACKSPACE] or keyPressed[SDLK_KP_MINUS])
+					{
+						if(mode==7)
+						{
+							if(songnametmp.size()>1)
+							{
+								songnametmp.erase(songnametmp.end()-1);
+							}
+							else
+							{
+								songnametmp=" ";
+							}
+						}
+						if(mode==8)
+						{
+							if(tmpdevicename.size()>1)
+							{
+								tmpdevicename.erase(tmpdevicename.end()-1);
+							}
+							else
+							{
+								tmpdevicename=" ";
+							}
+						}
+					}
+					else if((event.key.keysym.sym>0x60 and event.key.keysym.sym<0x7B) or (event.key.keysym.sym>0x30 and event.key.keysym.sym<0x40))
+					{
+						if(mode==7)
+						{
+							songnametmp=songnametmp+char(event.key.keysym.sym);
+						}
+						if(mode==8)
+						{
+							tmpdevicename=tmpdevicename+char(event.key.keysym.sym);
+						}
+					}
 					anzeige=true;
+					keyPressed[event.key.keysym.sym] = false;
 					break;
 				case SDL_MOUSEBUTTONDOWN:
 			        if( event.button.button == SDL_BUTTON_LEFT )
@@ -2620,23 +3312,7 @@ int main(int argc, char* argv[])
 							}
 							else if(CheckMouse(mousex, mousey, open.button_rect)==true)
 							{
-								// Load SongDB
-								songset.clear();
-								sqlite3 *songsdb;
-								sprintf(dbpath, "%s/.sequencegang5/songs.db", getenv("HOME"));
-								if(sqlite3_open(dbpath, &songsdb) != SQLITE_OK)
-								{
-									cout << "Fehler beim Öffnen: " << sqlite3_errmsg(songsdb) << endl;
-									return 1;
-								}
-								cout << "Songsdatenbank erfolgreich geöffnet!" << endl;
-								sprintf(sql, "SELECT * FROM settings");
-								if( sqlite3_exec(songsdb,sql,songpatternnamecallback,0,0) != SQLITE_OK)
-								{
-									cout << "Fehler beim SELECT: " << sqlite3_errmsg(songsdb) << endl;
-									return 1;
-								}
-								sqlite3_close(songsdb);
+								LoadSongDB();
 
 								for(int i=0;i<16;i++)
 								{
@@ -2658,23 +3334,7 @@ int main(int argc, char* argv[])
 							}
 							else if(CheckMouse(mousex, mousey, save.button_rect)==true)
 							{
-								// Load SongDB
-								songset.clear();
-								sqlite3 *songsdb;
-								sprintf(dbpath, "%s/.sequencegang5/songs.db", getenv("HOME"));
-								if(sqlite3_open(dbpath, &songsdb) != SQLITE_OK)
-								{
-									cout << "Fehler beim Öffnen: " << sqlite3_errmsg(songsdb) << endl;
-									return 1;
-								}
-								cout << "Songsdatenbank erfolgreich geöffnet!" << endl;
-								sprintf(sql, "SELECT * FROM settings");
-								if( sqlite3_exec(songsdb,sql,songpatternnamecallback,0,0) != SQLITE_OK)
-								{
-									cout << "Fehler beim SELECT: " << sqlite3_errmsg(songsdb) << endl;
-									return 1;
-								}
-								sqlite3_close(songsdb);
+								LoadSongDB();
 
 								for(int i=0;i<16;i++)
 								{
@@ -3700,79 +4360,8 @@ int main(int argc, char* argv[])
 			        			}
 			        			if(save_song>0)
 			        			{
-									// Load SongDB
-									sqlite3 *songsdb;
-									sprintf(dbpath, "%s/.sequencegang5/songs.db", getenv("HOME"));
-									if(sqlite3_open(dbpath, &songsdb) != SQLITE_OK)
-									{
-										cout << "Fehler beim Öffnen: " << sqlite3_errmsg(songsdb) << endl;
-										return 1;
-									}
-									cout << "Songsdatenbank erfolgreich geöffnet!" << endl;
-
-									sprintf(sql, "UPDATE settings SET name = \"%s\" WHERE id = %d",songname.c_str(),save_song);
-									if( sqlite3_exec(songsdb,sql,NULL,0,0) != SQLITE_OK)
-									{
-										cout << "Fehler beim UPDATE: " << sqlite3_errmsg(songsdb) << endl;
-										return 1;
-									}
-									sprintf(sql, "UPDATE settings SET bpm = \"%d\" WHERE id = %d",bpm+60,save_song);
-									if( sqlite3_exec(songsdb,sql,NULL,0,0) != SQLITE_OK)
-									{
-										cout << "Fehler beim UPDATE: " << sqlite3_errmsg(songsdb) << endl;
-										return 1;
-									}
-
-									sprintf(sql, "DELETE FROM Song%d",save_song-1);
-									if( sqlite3_exec(songsdb,sql,NULL,0,0) != SQLITE_OK)
-									{
-										cout << "Fehler beim DELETE: " << sqlite3_errmsg(songsdb) << endl;
-										return 1;
-									}
-
-									cout << "Schreibe in DB Song " << save_song-1 << endl;
-
-									for(int i=0;i<10;i++)
-									{
-										for(int j=0;j<16;j++)
-										{
-											for(int k=0;k<16;k++)
-											{
-												for(int l=0;l<5;l++)
-												{
-													if(pattern[i][j][k][l][0]>0)
-													{
-														sprintf(sql, "INSERT INTO Song%d (device,pattern,step,pos,command,data1,data2) VALUES (%d,%d,%d,%d,%d,%d,%d);",save_song-1,i,j,k,l,pattern[i][j][k][l][0],pattern[i][j][k][l][1],pattern[i][j][k][l][2]);
-														if( sqlite3_exec(songsdb,sql,NULL,0,0) != SQLITE_OK)
-														{
-															cout << "Fehler beim INSERT: " << sqlite3_errmsg(songsdb) << endl;
-															return 1;
-														}
-													}
-												}
-											}
-										}
-									}
-									for(int i=0;i<11;i++)
-									{
-										for(int j=0;j<256;j++)
-										{
-											if(songpatt[i][j]>0)
-											{
-												sprintf(sql, "INSERT INTO Song%d (device,pattern,step) VALUES (%d,%d,%d);",save_song-1,i+10,songpatt[i][j],j);
-												if( sqlite3_exec(songsdb,sql,NULL,0,0) != SQLITE_OK)
-												{
-													cout << "Fehler beim INSERT: " << sqlite3_errmsg(songsdb) << endl;
-													return 1;
-												}
-												
-											} 
-											
-										}
-									}
-									sqlite3_close(songsdb);
-			        			}
-
+									SaveSongDB(save_song);
+								}
 								mode=0;
 							}
 			        		else if(CheckMouse(mousex, mousey, cancel.button_rect)==true)
