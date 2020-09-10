@@ -615,7 +615,7 @@ public:
 		button_rect.x = posx*scorex+3;
 		button_rect.y = posy*scorey+3;
 		button_rect.w = button_width*scorex-6;
-		button_rect.h = 2*scorey-6;
+		button_rect.h = button_height*scorey-6;
 	}
 
 	void show(SDL_Surface* screen, TTF_Font* font)
