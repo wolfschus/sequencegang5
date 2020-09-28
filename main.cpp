@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 0.98 07.09.2020
+// Version     : 1.00 28.09.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux/Raspberry PI
 // License     : GNU General Public License v3.0
@@ -403,10 +403,18 @@ public:
 					{
 						AllNotesOff(aset[i].mididevice,aset[i].midichannel);
 					}
+					for(int i=5;i<11;i++)
+					{
+						AllNotesOff(aset[i].mididevice,aset[i].midichannel);
+					}
 				}
 				else if(songpatt[10][aktsongstep]==2)
 				{
 					for(int i=0;i<5;i++)
+					{
+						AllNotesOff(aset[i].mididevice,aset[i].midichannel);
+					}
+					for(int i=5;i<11;i++)
 					{
 						AllNotesOff(aset[i].mididevice,aset[i].midichannel);
 					}
@@ -415,7 +423,7 @@ public:
 				{
 					bpm=songpatt[10][aktsongstep];
 				}
-			  for(int i=0;i<5;i++)
+			  for(int i=0;i<10;i++)
 			  {
 				if(playsong==true)
 				{
@@ -450,29 +458,40 @@ public:
 	void MidiCommand(int aktdev, int step)
 	{
 //		pattern[10][16][16][5][3];
-//		cout << aktdev << endl;
+//		cout << aktdev << " : " << step << endl;
+		int aktdev2=0;
 
+		if(aktdev<5)
+		{
+			aktdev2=aktdev;
+		}
+		else
+		{
+			aktdev2=aktdev+1;
+		}
+			
 		for(int i=0;i<5;i++)
 		{
 			if(lastpattern[aktdev][i][0]==1)
 			{
-				NoteOff(aset[aktdev].mididevice,aset[aktdev].midichannel,lastpattern[aktdev][i][1]);
+				NoteOff(aset[aktdev2].mididevice,aset[aktdev2].midichannel,lastpattern[aktdev][i][1]);
 			}
 			if(pattern[aktdev][selpattern[aktdev]][step][i][0]==1)
 			{
-				NoteOn(aset[aktdev].mididevice,aset[aktdev].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1], pattern[aktdev][selpattern[aktdev]][step][i][2]);
+				NoteOn(aset[aktdev2].mididevice,aset[aktdev2].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1], pattern[aktdev][selpattern[aktdev]][step][i][2]);
+//				cout << "NoteOn" << " : " << int(pattern[aktdev][selpattern[aktdev]][step][i][1]) << endl;
 			}
 			if(pattern[aktdev][selpattern[aktdev]][step][i][0]==2)
 			{
-				NoteOn(aset[aktdev].mididevice,aset[aktdev].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1], pattern[aktdev][selpattern[aktdev]][step][i][2]);
+				NoteOn(aset[aktdev2].mididevice,aset[aktdev2].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1], pattern[aktdev][selpattern[aktdev]][step][i][2]);
 			}
 			if(pattern[aktdev][selpattern[aktdev]][step][i][0]==3)
 			{
-				NoteOff(aset[aktdev].mididevice,aset[aktdev].midichannel,pattern[aktdev][selpattern[aktdev]][step][i][1]);
+				NoteOff(aset[aktdev2].mididevice,aset[aktdev2].midichannel,pattern[aktdev][selpattern[aktdev]][step][i][1]);
 			}
 			if(pattern[aktdev][selpattern[aktdev]][step][i][0]==4)
 			{
-				ProgramChange(aset[aktdev].mididevice,aset[aktdev].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1]);
+				ProgramChange(aset[aktdev2].mididevice,aset[aktdev2].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1]);
 			}
 		}
 	}
