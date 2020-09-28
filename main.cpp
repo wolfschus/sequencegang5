@@ -66,6 +66,7 @@ char cstring[512];
 char playmode = 0;
 char pattern[10][16][16][5][3];
 int songpatt[11][256];
+char lastpattern[10][5][3];
 
 struct seqsettings{
 	string name;
@@ -370,6 +371,16 @@ public:
 //			cout << istbpm << endl;
 			miditick=0;
 		  oldstep=aktstep;
+			for(int i=0;i<10;i++)
+			{
+				for(int l=0;l<5;l++)
+				{
+					for(int m=0;m<3;m++)
+					{
+						lastpattern[i][l][m]=pattern[i][selpattern[i]][aktstep][l][m];
+					}
+				}
+			}
 		  aktstep++;
 	  		if(clockmodemaster==true and playmode==1)
 			{
@@ -452,9 +463,9 @@ public:
 
 		for(int i=0;i<5;i++)
 		{
-			if(pattern[aktdev][selpattern[aktdev]][oldstep][i][0]==1)
+			if(lastpattern[aktdev][i][0]==1)
 			{
-				NoteOff(aset[aktdev2].mididevice,aset[aktdev2].midichannel,pattern[aktdev][selpattern[aktdev]][oldstep][i][1]);
+				NoteOff(aset[aktdev2].mididevice,aset[aktdev2].midichannel,lastpattern[aktdev][i][1]);
 			}
 			if(pattern[aktdev][selpattern[aktdev]][step][i][0]==1)
 			{
@@ -926,6 +937,20 @@ bool Clearpattern()
 	return true;
 }
 
+bool Clearlastpattern()
+{
+	for(int i=0;i<10;i++)
+	{
+		for(int l=0;l<5;l++)
+		{
+			for(int m=0;m<3;m++)
+			{
+				lastpattern[i][l][m]=0;
+			}
+		}
+	}
+	return true;
+}
 bool Clearsongpattern()
 {
 	for(int i=0;i<11;i++)
@@ -943,6 +968,7 @@ int LoadScene(int nr)
 	// Load Song
 	Clearpattern();
 	Clearsongpattern();
+	Clearlastpattern();
 	sqlite3 *songsdb;
 	char dbpath[512];
 	sprintf(dbpath, "%s/.sequencegang5/songs.db", getenv("HOME"));
