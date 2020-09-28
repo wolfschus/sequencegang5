@@ -450,38 +450,29 @@ public:
 	void MidiCommand(int aktdev, int step)
 	{
 //		pattern[10][16][16][5][3];
-		int aktdev2 = 0;
-		
-		if(aktdev<5)
-		{
-			aktdev2 = aktdev;
-		}
-		else
-		{
-			aktdev2 = aktdev + 1;
-		}
+//		cout << aktdev << endl;
 
 		for(int i=0;i<5;i++)
 		{
 			if(lastpattern[aktdev][i][0]==1)
 			{
-				NoteOff(aset[aktdev2].mididevice,aset[aktdev2].midichannel,lastpattern[aktdev][i][1]);
+				NoteOff(aset[aktdev].mididevice,aset[aktdev].midichannel,lastpattern[aktdev][i][1]);
 			}
 			if(pattern[aktdev][selpattern[aktdev]][step][i][0]==1)
 			{
-				NoteOn(aset[aktdev2].mididevice,aset[aktdev2].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1], pattern[aktdev][selpattern[aktdev]][step][i][2]);
+				NoteOn(aset[aktdev].mididevice,aset[aktdev].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1], pattern[aktdev][selpattern[aktdev]][step][i][2]);
 			}
 			if(pattern[aktdev][selpattern[aktdev]][step][i][0]==2)
 			{
-				NoteOn(aset[aktdev2].mididevice,aset[aktdev2].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1], pattern[aktdev][selpattern[aktdev]][step][i][2]);
+				NoteOn(aset[aktdev].mididevice,aset[aktdev].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1], pattern[aktdev][selpattern[aktdev]][step][i][2]);
 			}
 			if(pattern[aktdev][selpattern[aktdev]][step][i][0]==3)
 			{
-				NoteOff(aset[aktdev2].mididevice,aset[aktdev2].midichannel,pattern[aktdev][selpattern[aktdev]][step][i][1]);
+				NoteOff(aset[aktdev].mididevice,aset[aktdev].midichannel,pattern[aktdev][selpattern[aktdev]][step][i][1]);
 			}
 			if(pattern[aktdev][selpattern[aktdev]][step][i][0]==4)
 			{
-				ProgramChange(aset[aktdev2].mididevice,aset[aktdev2].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1]);
+				ProgramChange(aset[aktdev].mididevice,aset[aktdev].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1]);
 			}
 		}
 	}
