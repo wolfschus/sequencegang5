@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 1.00 28.09.2020
+// Version     : 1.01 29.09.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux/Raspberry PI
 // License     : GNU General Public License v3.0
@@ -892,7 +892,30 @@ void midiinclockcallback( double deltatime, std::vector< unsigned char > *messag
 		{
 			if((int)message->at(1)==127 and (int)message->at(2)==127 and (int)message->at(3)==6 and (int)message->at(4)==2 and (int)message->at(5)==247)
 			{
-				wsmidi.Play();
+				if(playmode==0)
+				{
+					wsmidi.Play();
+					if(submode==2)
+					{
+						playsong=true;
+					}
+					else
+					{
+						playsong=false;
+					}
+					
+				}
+				else if(playmode==2)
+				{
+					playmode=1;
+					timerrun=true;
+				}
+				else
+				{
+					playmode=2;
+					timerrun=false;
+				}
+				
 			}
 		}
 		if((int)message->at(0)==240)
@@ -2018,20 +2041,17 @@ int main(int argc, char* argv[])
 // Aktsongpattern
 				if(submode==2)
 				{
-					if(clockmodeext==false)
-					{
-						SDL_FreeSurface(text);
-						sprintf(tmp, "%d",aktsongstep+1);
-						text = TTF_RenderText_Blended(font, tmp, textColor);
-						textPosition.x = 17*scorex-text->w/2;
-						textPosition.y = 20*scorey-text->h/2;
-						SDL_BlitSurface(text, 0, screen, &textPosition);
+					SDL_FreeSurface(text);
+					sprintf(tmp, "%d",aktsongstep+1);
+					text = TTF_RenderText_Blended(font, tmp, textColor);
+					textPosition.x = 17*scorex-text->w/2;
+					textPosition.y = 20*scorey-text->h/2;
+					SDL_BlitSurface(text, 0, screen, &textPosition);
 
-						songstep10ff.show(screen, fontsmall);
-						songstepff.show(screen, fontsmall);
-						songstepfb.show(screen, fontsmall);
-						songstep10fb.show(screen, fontsmall);
-					}
+					songstep10ff.show(screen, fontsmall);
+					songstepff.show(screen, fontsmall);
+					songstepfb.show(screen, fontsmall);
+					songstep10fb.show(screen, fontsmall);
 					edit.show(screen, fontsmall);
 
 					if(edit.aktiv==true)
@@ -3454,24 +3474,18 @@ int main(int argc, char* argv[])
 								}
 								else if(CheckMouse(mousex, mousey, songstep10ff.button_rect)==true)
 								{
-									if(clockmodeext==false)
+									songstep10ff.aktiv=true;
+									if(aktsongstep<239)
 									{
-										songstep10ff.aktiv=true;
-										if(aktsongstep<239)
-										{
-											aktsongstep=aktsongstep+16;
-										}
+										aktsongstep=aktsongstep+16;
 									}
 								}
 								else if(CheckMouse(mousex, mousey, songstep10fb.button_rect)==true)
 								{
-									if(clockmodeext==false)
+									songstep10fb.aktiv=true;
+									if(aktsongstep>16)
 									{
-										songstep10fb.aktiv=true;
-										if(aktsongstep>16)
-										{
-											aktsongstep=aktsongstep-16;
-										}
+										aktsongstep=aktsongstep-16;
 									}
 								}
 							}
