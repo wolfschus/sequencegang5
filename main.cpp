@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 1.01 29.09.2020
+// Version     : 1.02 30.09.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux/Raspberry PI
 // License     : GNU General Public License v3.0
@@ -59,6 +59,10 @@
 #include "images/plus.xpm"
 #include "images/minus.xpm"
 #include "images/clock.xpm"
+#include "images/edit-copy.xpm"
+#include "images/edit-cut.xpm"
+#include "images/edit-delete.xpm"
+#include "images/edit-paste.xpm"
 
 using namespace std;
 
@@ -67,6 +71,8 @@ char playmode = 0;
 char pattern[10][16][16][5][3];
 int songpatt[11][256];
 char lastpattern[10][5][3];
+char clipboard[16][5][3];
+bool isclipboard = false;
 
 struct seqsettings{
 	string name;
@@ -1280,6 +1286,10 @@ int main(int argc, char* argv[])
 	SDL_Surface* top_image = IMG_ReadXPMFromArray(go_top_xpm);
 	SDL_Surface* bottom_image = IMG_ReadXPMFromArray(go_bottom_xpm);
 	SDL_Surface* clock_image = IMG_ReadXPMFromArray(clock_xpm);
+	SDL_Surface* copy_image = IMG_ReadXPMFromArray(edit_copy_xpm);
+	SDL_Surface* cut_image = IMG_ReadXPMFromArray(edit_cut_xpm);
+	SDL_Surface* delete_image = IMG_ReadXPMFromArray(edit_delete_xpm);
+	SDL_Surface* paste_image = IMG_ReadXPMFromArray(edit_paste_xpm);
 
 	char tmp[256];
 
@@ -1371,6 +1381,7 @@ int main(int argc, char* argv[])
 	WSButton start(32,19,2,2,scorex,scorey,start_image,"");
 	WSButton pause(32,19,2,2,scorex,scorey,pause_image,"");
 	WSButton stop(30,19,2,2,scorex,scorey,stop_image,"");
+	WSButton seqedit(14,19,2,2,scorex,scorey,NULL,"Seq");
 	WSButton program(16,19,2,2,scorex,scorey,NULL,"Prog");
 	WSButton noteonoff(18,19,2,2,scorex,scorey,NULL,"OnOff");
 	WSButton noteon(20,19,2,2,scorex,scorey,NULL,"On");
@@ -1410,6 +1421,10 @@ int main(int argc, char* argv[])
 	WSButton top(34,17,2,2,scorex,scorey,top_image,"");
 	WSButton bottom(34,17,2,2,scorex,scorey,bottom_image,"");
 	WSButton clock(10,19,2,2,scorex,scorey,clock_image,"");
+	WSButton editcut(14,17,2,2,scorex,scorey,cut_image,"");
+	WSButton editcopy(16,17,2,2,scorex,scorey,copy_image,"");
+	WSButton editpaste(18,17,2,2,scorex,scorey,paste_image,"");
+	WSButton editdelete(20,17,2,2,scorex,scorey,delete_image,"");
 
 	songpattern.aktiv=true;
 	songpattern.selected=true;
@@ -2202,6 +2217,17 @@ int main(int argc, char* argv[])
 							programup.show(screen, fontsmall);
 							program10up.show(screen, fontsmall);
 						}
+// seqedit
+						if(seqedit.aktiv==true)
+						{
+							editcut.show(screen, fontsmall);
+							editcopy.show(screen, fontsmall);
+							if(isclipboard==true)
+							{
+								editpaste.show(screen, fontsmall);
+							}
+							editdelete.show(screen, fontsmall);
+						}
 					}
 				}
 
@@ -2223,6 +2249,7 @@ int main(int argc, char* argv[])
 // NoteOn / NoteOff / Clear Umschalter / Edit
 				if(submode==1)
 				{
+					seqedit.show(screen, fontsmall);
 					program.show(screen, fontsmall);
 					noteonoff.show(screen, fontsmall);
 					noteon.show(screen, fontsmall);
@@ -3292,6 +3319,7 @@ int main(int argc, char* argv[])
 								showpattern.aktiv=false;
 								edit.aktiv=false;
 								clear.aktiv=false;
+								seqedit.aktiv=false;
 								program.aktiv=false;
 								noteonoff.aktiv=false;
 								noteon.aktiv=false;
@@ -3304,6 +3332,7 @@ int main(int argc, char* argv[])
 								songpattern.aktiv=false;
 								showpattern.aktiv=true;
 								edit.aktiv=false;
+								seqedit.aktiv=false;
 								program.aktiv=false;
 								clear.aktiv=false;
 								noteonoff.aktiv=false;
@@ -3317,6 +3346,7 @@ int main(int argc, char* argv[])
 								songpattern.aktiv=true;
 								showpattern.aktiv=false;
 								edit.aktiv=false;
+								seqedit.aktiv=false;
 								program.aktiv=false;
 								clear.aktiv=false;
 								noteonoff.aktiv=false;
@@ -3891,6 +3921,19 @@ int main(int argc, char* argv[])
 								else if(CheckMouse(mousex, mousey, program.button_rect)==true and edit.aktiv==true)
 								{
 									program.aktiv=true;
+									seqedit.aktiv=false;
+									clear.aktiv=false;
+									noteonoff.aktiv=false;
+									noteon.aktiv=false;
+									noteoff.aktiv=false;
+									programedit = true;
+									noteedit = false;
+									volumeedit = false;
+								}
+								else if(CheckMouse(mousex, mousey, seqedit.button_rect)==true and edit.aktiv==true)
+								{
+									program.aktiv=false;
+									seqedit.aktiv=true;
 									clear.aktiv=false;
 									noteonoff.aktiv=false;
 									noteon.aktiv=false;
@@ -3901,6 +3944,7 @@ int main(int argc, char* argv[])
 								}
 								else if(CheckMouse(mousex, mousey, noteonoff.button_rect)==true and edit.aktiv==true)
 								{
+									seqedit.aktiv=false;
 									program.aktiv=false;
 									clear.aktiv=false;
 									noteonoff.aktiv=true;
@@ -3912,6 +3956,7 @@ int main(int argc, char* argv[])
 								}
 								else if(CheckMouse(mousex, mousey, noteon.button_rect)==true and edit.aktiv==true)
 								{
+									seqedit.aktiv=false;
 									program.aktiv=false;
 									clear.aktiv=false;
 									noteonoff.aktiv=false;
@@ -3923,6 +3968,7 @@ int main(int argc, char* argv[])
 								}
 								else if(CheckMouse(mousex, mousey, noteoff.button_rect)==true and edit.aktiv==true)
 								{
+									seqedit.aktiv=false;
 									program.aktiv=false;
 									clear.aktiv=false;
 									noteonoff.aktiv=false;
@@ -3934,6 +3980,7 @@ int main(int argc, char* argv[])
 								}
 								else if(CheckMouse(mousex, mousey, clear.button_rect)==true and edit.aktiv==true)
 								{
+									seqedit.aktiv=false;
 									program.aktiv=false;
 									clear.aktiv=true;
 									noteonoff.aktiv=false;
@@ -3948,6 +3995,7 @@ int main(int argc, char* argv[])
 									if(edit.aktiv==true)
 									{
 										edit.aktiv=false;
+										seqedit.aktiv=false;
 										program.aktiv=false;
 										clear.aktiv=false;
 										noteonoff.aktiv=false;
@@ -3960,6 +4008,77 @@ int main(int argc, char* argv[])
 									else
 									{
 										edit.aktiv=true;
+									}
+								}
+								else if(CheckMouse(mousex, mousey, editcut.button_rect)==true)
+								{
+									if(seqedit.aktiv==true and edit.aktiv)
+									{
+										editcut.aktiv=true;
+										isclipboard = true;
+										for(int i=0;i<16;i++)
+										{
+											for(int j=0;j<5;j++)
+											{
+												for(int k=0;k<3;k++)
+												{
+													clipboard[i][j][k] = pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][k];
+													pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][k]=0;
+												}
+											}
+										}
+									}
+								}
+								else if(CheckMouse(mousex, mousey, editcopy.button_rect)==true)
+								{
+									if(seqedit.aktiv==true and edit.aktiv)
+									{
+										editcopy.aktiv=true;
+										isclipboard = true;
+										for(int i=0;i<16;i++)
+										{
+											for(int j=0;j<5;j++)
+											{
+												for(int k=0;k<3;k++)
+												{
+													clipboard[i][j][k] = pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][k];
+												}
+											}
+										}
+									}
+								}
+								else if(CheckMouse(mousex, mousey, editpaste.button_rect)==true)
+								{
+									if(seqedit.aktiv==true and edit.aktiv==true and isclipboard==true)
+									{
+										editpaste.aktiv=true;
+										for(int i=0;i<16;i++)
+										{
+											for(int j=0;j<5;j++)
+											{
+												for(int k=0;k<3;k++)
+												{
+													pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][k] = clipboard[i][j][k];
+												}
+											}
+										}
+									}
+								}
+								else if(CheckMouse(mousex, mousey, editdelete.button_rect)==true)
+								{
+									if(seqedit.aktiv==true and edit.aktiv)
+									{
+										editdelete.aktiv=true;
+										for(int i=0;i<16;i++)
+										{
+											for(int j=0;j<5;j++)
+											{
+												for(int k=0;k<3;k++)
+												{
+													pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][k]=0;
+												}
+											}
+										}
 									}
 								}
 								else if(CheckMouse(mousex, mousey, rahmen)==true)
@@ -4630,6 +4749,10 @@ int main(int argc, char* argv[])
 			        	plusbpm.aktiv = false;
 			        	top.aktiv = false;
 			        	bottom.aktiv = false;
+						editcut.aktiv=false;
+						editcopy.aktiv=false;
+						editpaste.aktiv=false;
+						editdelete.aktiv=false;
 			        	for(int i=0;i<5;i++)
 			        	{
 			        		pattern_up[i].aktiv = false;
