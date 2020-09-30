@@ -61,7 +61,6 @@
 #include "images/clock.xpm"
 #include "images/edit-copy.xpm"
 #include "images/edit-cut.xpm"
-#include "images/edit-delete.xpm"
 #include "images/edit-paste.xpm"
 
 using namespace std;
@@ -1288,7 +1287,6 @@ int main(int argc, char* argv[])
 	SDL_Surface* clock_image = IMG_ReadXPMFromArray(clock_xpm);
 	SDL_Surface* copy_image = IMG_ReadXPMFromArray(edit_copy_xpm);
 	SDL_Surface* cut_image = IMG_ReadXPMFromArray(edit_cut_xpm);
-	SDL_Surface* delete_image = IMG_ReadXPMFromArray(edit_delete_xpm);
 	SDL_Surface* paste_image = IMG_ReadXPMFromArray(edit_paste_xpm);
 
 	char tmp[256];
@@ -1424,7 +1422,6 @@ int main(int argc, char* argv[])
 	WSButton editcut(14,17,2,2,scorex,scorey,cut_image,"");
 	WSButton editcopy(16,17,2,2,scorex,scorey,copy_image,"");
 	WSButton editpaste(18,17,2,2,scorex,scorey,paste_image,"");
-	WSButton editdelete(20,17,2,2,scorex,scorey,delete_image,"");
 
 	songpattern.aktiv=true;
 	songpattern.selected=true;
@@ -2226,7 +2223,6 @@ int main(int argc, char* argv[])
 							{
 								editpaste.show(screen, fontsmall);
 							}
-							editdelete.show(screen, fontsmall);
 						}
 					}
 				}
@@ -4064,23 +4060,6 @@ int main(int argc, char* argv[])
 										}
 									}
 								}
-								else if(CheckMouse(mousex, mousey, editdelete.button_rect)==true)
-								{
-									if(seqedit.aktiv==true and edit.aktiv)
-									{
-										editdelete.aktiv=true;
-										for(int i=0;i<16;i++)
-										{
-											for(int j=0;j<5;j++)
-											{
-												for(int k=0;k<3;k++)
-												{
-													pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][k]=0;
-												}
-											}
-										}
-									}
-								}
 								else if(CheckMouse(mousex, mousey, rahmen)==true)
 								{
 									int i = int((mousey/scorey-3)/2);
@@ -4752,7 +4731,6 @@ int main(int argc, char* argv[])
 						editcut.aktiv=false;
 						editcopy.aktiv=false;
 						editpaste.aktiv=false;
-						editdelete.aktiv=false;
 			        	for(int i=0;i<5;i++)
 			        	{
 			        		pattern_up[i].aktiv = false;
