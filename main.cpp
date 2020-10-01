@@ -1889,6 +1889,26 @@ int main(int argc, char* argv[])
 								textPosition.y = 3*scorey+(2*j)*scorey+8+2*text->h;
 								SDL_BlitSurface(text, 0, screen, &textPosition);
 							}
+							if(pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][0]==5)
+							{
+								boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0xFF8FFFFF);
+								SDL_FreeSurface(text);
+								text = TTF_RenderText_Blended(fontextrasmall, "CC", blackColor);
+								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+								textPosition.y = 3*scorey+(2*j)*scorey+4;
+								SDL_BlitSurface(text, 0, screen, &textPosition);
+								SDL_FreeSurface(text);
+								sprintf(tmp, "%d",pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]);
+								text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
+								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+								textPosition.y = 3*scorey+(2*j)*scorey+6+text->h;
+								SDL_BlitSurface(text, 0, screen, &textPosition);
+								sprintf(tmp, "%d",pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][2]);
+								text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
+								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+								textPosition.y = 3*scorey+(2*j)*scorey+8+2*text->h;
+								SDL_BlitSurface(text, 0, screen, &textPosition);
+							}
 						}
 					}
 				
@@ -3903,60 +3923,6 @@ int main(int argc, char* argv[])
 										}
 									}
 								}
-								// CC Byte 1
-								else if(CheckMouse(mousex, mousey, ccb1up.button_rect)==true)
-								{
-									cout << "X" << endl;
-									if(ccbutton.aktiv==true)
-									{
-										ccb1up.aktiv=true;
-										if(akteditccb1<127)
-										{
-											akteditccb1++;
-										}
-									}
-								}
-								else if(CheckMouse(mousex, mousey, ccb1down.button_rect)==true)
-								{
-									if(noteonoff.aktiv==true or noteon.aktiv==true)
-									{
-										ccb1down.aktiv=true;
-										if(akteditccb1>0)
-										{
-											akteditccb1--;
-										}
-									}
-								}
-								else if(CheckMouse(mousex, mousey, ccb110up.button_rect)==true)
-								{
-									if(noteonoff.aktiv==true or noteon.aktiv==true)
-									{
-										ccb110up.aktiv=true;
-										if(akteditccb1<117)
-										{
-											akteditccb1=akteditccb1+10;
-										}
-										else
-										{
-											akteditccb1=127;
-										}
-									}
-								}
-								else if(CheckMouse(mousex, mousey, ccb110down.button_rect)==true)
-								{
-									if(noteonoff.aktiv==true or noteon.aktiv==true)
-									{
-										ccb110down.aktiv=true;
-										if(akteditccb1>10)
-										{
-											akteditccb1=akteditccb1-10;
-										}
-										else
-										{
-											akteditccb1=0;
-										}
-									}
-								}
 								else if(CheckMouse(mousex, mousey, top.button_rect)==true)
 								{
 									if(seite2==true)
@@ -4019,6 +3985,112 @@ int main(int argc, char* argv[])
 										else
 										{
 											akteditprogram=0;
+										}
+									}
+								}
+								// CC Byte 1
+								if(CheckMouse(mousex, mousey, ccb1up.button_rect)==true)
+								{
+									if(ccbutton.aktiv==true)
+									{
+										ccb1up.aktiv=true;
+										if(akteditccb1<127)
+										{
+											akteditccb1++;
+										}
+									}
+								}
+								if(CheckMouse(mousex, mousey, ccb1down.button_rect)==true)
+								{
+									if(ccbutton.aktiv==true)
+									{
+										ccb1down.aktiv=true;
+										if(akteditccb1>0)
+										{
+											akteditccb1--;
+										}
+									}
+								}
+								if(CheckMouse(mousex, mousey, ccb110up.button_rect)==true)
+								{
+									if(ccbutton.aktiv==true)
+									{
+										ccb110up.aktiv=true;
+										if(akteditccb1<117)
+										{
+											akteditccb1=akteditccb1+10;
+										}
+										else
+										{
+											akteditccb1=127;
+										}
+									}
+								}
+								if(CheckMouse(mousex, mousey, ccb110down.button_rect)==true)
+								{
+									if(ccbutton.aktiv==true)
+									{
+										ccb110down.aktiv=true;
+										if(akteditccb1>10)
+										{
+											akteditccb1=akteditccb1-10;
+										}
+										else
+										{
+											akteditccb1=0;
+										}
+									}
+								}
+								// CC Byte 2
+								if(CheckMouse(mousex, mousey, ccb2up.button_rect)==true)
+								{
+									if(ccbutton.aktiv==true)
+									{
+										ccb2up.aktiv=true;
+										if(akteditccb2<127)
+										{
+											akteditccb2++;
+										}
+									}
+								}
+								if(CheckMouse(mousex, mousey, ccb2down.button_rect)==true)
+								{
+									if(ccbutton.aktiv==true)
+									{
+										ccb2down.aktiv=true;
+										if(akteditccb2>0)
+										{
+											akteditccb2--;
+										}
+									}
+								}
+								if(CheckMouse(mousex, mousey, ccb210up.button_rect)==true)
+								{
+									if(ccbutton.aktiv==true)
+									{
+										ccb210up.aktiv=true;
+										if(akteditccb2<117)
+										{
+											akteditccb2=akteditccb2+10;
+										}
+										else
+										{
+											akteditccb2=127;
+										}
+									}
+								}
+								if(CheckMouse(mousex, mousey, ccb210down.button_rect)==true)
+								{
+									if(ccbutton.aktiv==true)
+									{
+										ccb210down.aktiv=true;
+										if(akteditccb2>10)
+										{
+											akteditccb2=akteditccb2-10;
+										}
+										else
+										{
+											akteditccb2=0;
 										}
 									}
 								}
@@ -4216,7 +4288,7 @@ int main(int argc, char* argv[])
 												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=0;
 												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=0;
 											}
-											if(noteonoff.aktiv==true and edit.aktiv==true)
+/*											if(noteonoff.aktiv==true and edit.aktiv==true)
 											{
 												akteditnote=pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1];
 												akteditvolume=pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2];
@@ -4236,6 +4308,11 @@ int main(int argc, char* argv[])
 												akteditnote=pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1];
 												akteditvolume=pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2];
 											}
+											else if(ccbutton.aktiv==true and edit.aktiv==true)
+											{
+												akteditccb1=pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1];
+												akteditccb2=pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2];
+											}*/
 										}
 										else
 										{
@@ -4262,6 +4339,12 @@ int main(int argc, char* argv[])
 												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=4;
 												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=akteditprogram;
 												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=0;
+											}
+											else if(ccbutton.aktiv==true and edit.aktiv==true)
+											{
+												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=5;
+												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=akteditccb1;
+												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=akteditccb2;
 											}
 										}
 									}
@@ -4874,6 +4957,10 @@ int main(int argc, char* argv[])
 			        	ccb1down.aktiv = false;
 			        	ccb110up.aktiv = false;
 			        	ccb110down.aktiv = false;
+			        	ccb2up.aktiv = false;
+			        	ccb2down.aktiv = false;
+			        	ccb210up.aktiv = false;
+			        	ccb210down.aktiv = false;
 			        	for(int i=0;i<5;i++)
 			        	{
 			        		pattern_up[i].aktiv = false;
