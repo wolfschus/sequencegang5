@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 1.02 30.09.2020
+// Version     : 1.03 01.10.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux/Raspberry PI
 // License     : GNU General Public License v3.0
@@ -67,7 +67,7 @@ using namespace std;
 
 char cstring[512];
 char playmode = 0;
-char pattern[10][16][16][5][3];
+char pattern[10][64][16][5][3];
 int songpatt[11][256];
 char lastpattern[10][5][3];
 char clipboard[16][5][3];
@@ -462,7 +462,6 @@ public:
 
 	void MidiCommand(int aktdev, int step)
 	{
-//		pattern[10][16][16][5][3];
 //		cout << aktdev << " : " << step << endl;
 		int aktdev2=0;
 
@@ -958,7 +957,7 @@ bool Clearpattern()
 {
 	for(int i=0;i<10;i++)
 	{
-		for(int j=0;j<15;j++)
+		for(int j=0;j<64;j++)
 		{
 			for(int k=0;k<15;k++)
 			{
@@ -3453,7 +3452,7 @@ int main(int argc, char* argv[])
 									if(CheckMouse(mousex, mousey, pattern_up[i].button_rect)==true)
 									{
 										pattern_up[i].aktiv=true;
-										if(nextselpattern[i+5*seite2]<15)
+										if(nextselpattern[i+5*seite2]<63)
 										{
 											nextselpattern[i+5*seite2]++;
 										}
