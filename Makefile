@@ -3,11 +3,13 @@ CXX      = g++
 CCFLAGS  = -Wall
 CXXFLAGS = -Wall -Wno-unused-variable -Wno-write-strings
 LDFLAGS  = -lSDL -lSDL_image -lSDL_ttf -lSDL_gfx -lSDL_mixer -lrtmidi -lpthread -lsqlite3
+MACHINE  = $(shell uname -m)
 
 TARGET  = sequencegang5
 OBJECTS = main.o
 
 all: $(TARGET)
+	@echo $(MACHINE)
 
 $(TARGET): $(OBJECTS)
 	$(CXX)  $(OBJECTS) -o $@ $(CXXFLAGS) $(LDFLAGS)

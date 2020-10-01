@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 1.03 01.10.2020
+// Version     : 1.04 01.10.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux/Raspberry PI
 // License     : GNU General Public License v3.0
@@ -141,6 +141,7 @@ int aktchangedevname = 0;
 string tmpdevicename = "New Name";
 int isselected=-1;
 char dbpath[512];
+char songpath[512];
 
 
 int beatstep_in = -1;
@@ -1007,9 +1008,7 @@ int LoadScene(int nr)
 	Clearsongpattern();
 	Clearlastpattern();
 	sqlite3 *songsdb;
-	char dbpath[512];
-	sprintf(dbpath, "%s/.sequencegang5/songs.db", getenv("HOME"));
-	if(sqlite3_open(dbpath, &songsdb) != SQLITE_OK)
+	if(sqlite3_open(songpath, &songsdb) != SQLITE_OK)
 	{
 		cout << "Fehler beim Öffnen: " << sqlite3_errmsg(songsdb) << endl;
 		return 1;
@@ -1036,7 +1035,7 @@ bool LoadSongDB()
 	songset.clear();
 	sqlite3 *songsdb;
 	sprintf(dbpath, "%s/.sequencegang5/songs.db", getenv("HOME"));
-	if(sqlite3_open(dbpath, &songsdb) != SQLITE_OK)
+	if(sqlite3_open(songpath, &songsdb) != SQLITE_OK)
 	{
 		cout << "Fehler beim Öffnen: " << sqlite3_errmsg(songsdb) << endl;
 		return 1;
@@ -1056,8 +1055,7 @@ bool SaveSongDB(int save_song)
 {
 	// Save SongDB
 	sqlite3 *songsdb;
-	sprintf(dbpath, "%s/.sequencegang5/songs.db", getenv("HOME"));
-	if(sqlite3_open(dbpath, &songsdb) != SQLITE_OK)
+	if(sqlite3_open(songpath, &songsdb) != SQLITE_OK)
 	{
 		cout << "Fehler beim Öffnen: " << sqlite3_errmsg(songsdb) << endl;
 		return 1;
@@ -1130,6 +1128,15 @@ bool SaveSongDB(int save_song)
 	
 int main(int argc, char* argv[])
 {
+	bool raspi=false;
+	#ifdef __arm__
+		raspi=true;
+	#endif
+	if(raspi==true)
+	{
+		cout << "Raspi" << endl;
+	}
+
 	bool debug=false;
 	bool fullscreen=false;
 	
@@ -1307,6 +1314,8 @@ int main(int argc, char* argv[])
 	}
 	sqlite3_close(settingsdb);
 	
+	sprintf(songpath, "%s/.sequencegang5/songs.db", getenv("HOME"));
+
 	int aktbank[10] = {0,0,0,0,0,0,0,0,0,0};
 	int selsetmididevice = 0;
 	int seleditstep = 0;
