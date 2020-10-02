@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 1.05 01.10.2020
+// Version     : 1.06 02.10.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux/Raspberry PI
 // License     : GNU General Public License v3.0
@@ -26,6 +26,10 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+
+#ifdef __arm__
+#include <wiringPi.h>
+#endif
 
 
 #include "images/media-playback-start.xpm"
@@ -363,10 +367,10 @@ public:
 		}
 	}
 
-	void NextTick()
+	void NextTick(bool isinput)
 	{
 		oldmiditick=miditick;
-		if(miditick<5)
+		if(miditick<5 and isinput==false)
 		{
 			miditick++;
 		}
@@ -530,7 +534,7 @@ public:
     	  usleep(60000000/(24*((bpm+60)*bpmcorrect)));
     	  if(timerrun==true and clockmodeext==false)
     	  {
-    		  wsmidi.NextTick();
+    		  wsmidi.NextTick(false);
      	  }
 	  }
    }
@@ -892,7 +896,7 @@ void midiinclockcallback( double deltatime, std::vector< unsigned char > *messag
 	{
 		if((int)message->at(0)==248 and playmode==1)
 		{
-  		  wsmidi.NextTick();
+  		  wsmidi.NextTick(false);
 		}
 
 		if((int)message->at(0)==240)
@@ -1128,15 +1132,34 @@ bool SaveSongDB(int save_song)
 	return true;
 }
 	
+void ClockInInterrupt()
+{
+//		cout << "ClockIn" << endl;
+		if(clockmodeext==true)
+		{
+			if(playmode==1)
+			{
+			  wsmidi.NextTick(true);
+			}
+		}
+		
+		return;
+}
+
 int main(int argc, char* argv[])
 {
 	bool raspi=false;
 	#ifdef __arm__
 		raspi=true;
 	#endif
+	
 	if(raspi==true)
 	{
 		cout << "Raspi" << endl;
+		wiringPiSetup();
+		pinMode(29, INPUT);
+		wiringPiISR (29, INT_EDGE_RISING, ClockInInterrupt) ;
+		
 	}
 
 	bool debug=false;
