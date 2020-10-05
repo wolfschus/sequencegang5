@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 1.06 02.10.2020
+// Version     : 1.07 05.10.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux/Raspberry PI
 // License     : GNU General Public License v3.0
@@ -1148,19 +1148,16 @@ void ClockInInterrupt()
 
 int main(int argc, char* argv[])
 {
-	bool raspi=false;
-	#ifdef __arm__
-		raspi=true;
-	#endif
+//	bool raspi=false;
 	
-	if(raspi==true)
-	{
-		cout << "Raspi" << endl;
+//	if(raspi==true)
+//	{
+/*		cout << "Raspi" << endl;
 		wiringPiSetup();
 		pinMode(29, INPUT);
 		wiringPiISR (29, INT_EDGE_RISING, ClockInInterrupt) ;
-		
-	}
+*/		
+//	}
 
 	bool debug=false;
 	bool fullscreen=false;
@@ -1408,6 +1405,7 @@ int main(int argc, char* argv[])
 
 	WSButton ok(16,19,2,2,scorex,scorey,ok_image,"");
 	WSButton cancel(18,19,2,2,scorex,scorey,cancel_image,"");
+	WSButton shutdown(17,16,2,2,scorex,scorey,exit_image,"");
 
 	WSButton start(32,19,2,2,scorex,scorey,start_image,"");
 	WSButton pause(32,19,2,2,scorex,scorey,pause_image,"");
@@ -2432,6 +2430,7 @@ int main(int argc, char* argv[])
 				textPosition.y = 10*scorey;
 				SDL_BlitSurface(text, 0, screen, &textPosition);
 
+				shutdown.show(screen, fontsmall);
 				ok.show(screen, fontsmall);
 				cancel.show(screen, fontsmall);
 			}
@@ -4383,6 +4382,10 @@ int main(int argc, char* argv[])
 			        	}
 			        	else if(mode==2)
 			        	{
+							if(CheckMouse(mousex, mousey, shutdown.button_rect)==true)
+							{
+								system("shutdown -P now");        // Shutdown.
+							}
 							if(CheckMouse(mousex, mousey, ok.button_rect)==true)
 							{
 								run = false;        // Programm beenden.
