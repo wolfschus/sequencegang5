@@ -26,8 +26,6 @@ make
 To install:
 
 cp db/sequencegang5.settings ~/.sequencegang.settings
-mkdir ~/Dokumente/Sequencegang5
-or
 mkdir ~/Documents/Sequencegang5
 cp db/songs.seq5 ~/Documents/Sequencegang5
 

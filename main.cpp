@@ -1040,7 +1040,7 @@ bool LoadSongDB()
 	// Load SongDB
 	songset.clear();
 	sqlite3 *songsdb;
-	sprintf(dbpath, "%s/Dokumente/Sequencegang5/songs.seq5", getenv("HOME"));
+	sprintf(dbpath, "%s/Documents/Sequencegang5/songs.seq5", getenv("HOME"));
 	if(sqlite3_open(songpath, &songsdb) != SQLITE_OK)
 	{
 		cout << "Fehler beim Öffnen: " << sqlite3_errmsg(songsdb) << endl;
@@ -1336,7 +1336,7 @@ int main(int argc, char* argv[])
 	}
 	sqlite3_close(settingsdb);
 	
-	sprintf(songpath, "%s/Dokumente/Sequencegang5/songs.seq5", getenv("HOME"));
+	sprintf(songpath, "%s/Documents/Sequencegang5/songs.seq5", getenv("HOME"));
 
 	int aktbank[10] = {0,0,0,0,0,0,0,0,0,0};
 	int selsetmididevice = 0;
