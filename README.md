@@ -13,6 +13,14 @@ To compile:
 
 sudo apt install libsdl1.2-dev libsdl-ttf2.0-dev libsdl-gfx1.2-dev libsdl-mixer1.2-dev libsdl-image1.2-dev librtmidi-dev librtaudio-dev libsqlite3-dev
 
+For compile on Linux (x86/a64):
+
+ln Makefile.linux Makefile
+make
+
+For compile on Raspberry Pi (arm):
+
+ln Makefile.raspi Makefile
 make
 
 To install:
