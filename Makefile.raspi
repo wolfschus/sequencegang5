@@ -21,12 +21,5 @@ clean:
 	rm $(TARGET)
 	rm $(OBJECTS)
 
-setup:
-	if test -d ~/.$(TARGET); \
-	then echo .$(TARGET) exists; \
-	else mkdir ~/.$(TARGET); \
-	cp -r db/* ~/.$(TARGET); \
-	fi
-
 install:
 	cp $(TARGET) /usr/local/bin/

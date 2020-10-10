@@ -25,7 +25,11 @@ make
 
 To install:
 
-make setup (Directory ~/.sequencegang5 will created, db-files copied, only first time needed)
+cp db/sequencegang5.settings ~/.sequencegang.settings
+mkdir ~/Dokumente/Sequencegang5
+or
+mkdir ~/Documents/Sequencegang5
+cp db/songs.seq5 ~/Documents/Sequencegang5
 
 sudo make install
 

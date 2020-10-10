@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 1.07 05.10.2020
+// Version     : 1.08 10.10.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux/Raspberry PI
 // License     : GNU General Public License v3.0
@@ -1040,7 +1040,7 @@ bool LoadSongDB()
 	// Load SongDB
 	songset.clear();
 	sqlite3 *songsdb;
-	sprintf(dbpath, "%s/.sequencegang5/songs.db", getenv("HOME"));
+	sprintf(dbpath, "%s/Dokumente/Sequencegang5/songs.seq5", getenv("HOME"));
 	if(sqlite3_open(songpath, &songsdb) != SQLITE_OK)
 	{
 		cout << "Fehler beim Öffnen: " << sqlite3_errmsg(songsdb) << endl;
@@ -1320,7 +1320,7 @@ int main(int argc, char* argv[])
 	char tmp[256];
 
 	// Load SettingsDB
-	sprintf(dbpath, "%s/.sequencegang5/settings.db", getenv("HOME"));
+	sprintf(dbpath, "%s/.sequencegang5.settings", getenv("HOME"));
 	sqlite3 *settingsdb;
 	if(sqlite3_open(dbpath, &settingsdb) != SQLITE_OK)
 	{
@@ -1336,7 +1336,7 @@ int main(int argc, char* argv[])
 	}
 	sqlite3_close(settingsdb);
 	
-	sprintf(songpath, "%s/.sequencegang5/songs.db", getenv("HOME"));
+	sprintf(songpath, "%s/Dokumente/Sequencegang5/songs.seq5", getenv("HOME"));
 
 	int aktbank[10] = {0,0,0,0,0,0,0,0,0,0};
 	int selsetmididevice = 0;
@@ -4403,7 +4403,7 @@ int main(int argc, char* argv[])
 								{
 									cout << "Save Settings" << endl;
 
-									sprintf(dbpath, "%s/.sequencegang5/settings.db", getenv("HOME"));
+									sprintf(dbpath, "%s/.sequencegang5.settings", getenv("HOME"));
 									if(sqlite3_open(dbpath, &settingsdb) != SQLITE_OK)
 									{
 										cout << "Fehler beim Öffnen: " << sqlite3_errmsg(settingsdb) << endl;
