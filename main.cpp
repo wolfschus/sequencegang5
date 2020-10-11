@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 1.08 10.10.2020
+// Version     : 1.10 11.10.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux/Raspberry PI
 // License     : GNU General Public License v3.0
@@ -149,6 +149,10 @@ char songpath[512];
 int akteditccb1 = 0;
 int akteditccb2 = 0;
 
+bool iseditonoff = false;
+bool isediton = false;
+bool iseditoff = false;
+int seleditstep = 0;
 
 int beatstep_in = -1;
 int vmpk_in = -1;
@@ -742,141 +746,89 @@ void midiincallback( double deltatime, std::vector< unsigned char > *message, vo
 	{
 		cout << (int)message->at(i) << " ";
 	}
-//	cout << endl;
+	cout << endl;
 
 	SDL_PushEvent(&CPUevent);
 
-	if((int)message->at(0)==176)
+	if(mode==0)
 	{
-		if(launchkeymini_in>-1)
+		if(submode==0 or submode==2)
 		{
-			if(mode==0 and (submode==0 or submode==1))
+			if((int)message->at(0)==176)
 			{
-				if((int)message->at(1)>20 and (int)message->at(1)<26)
+				if((int)message->at(1)==10)
 				{
-					for(int i=0;i<5;i++)
-					{
-						if((int)message->at(1)==21+i)
-						{
-							nextselpattern[i+5*seite2]=(int)((float)message->at(2)/127*16)-1;
-							if(playmode==0)
-							{
-								selpattern[i+5*seite2]=nextselpattern[i+5*seite2];
-							}
-						}
-					}
+					bpm = (int)message->at(2)*2;
 				}
-			}
-			if(mode==0 and (submode==0 or submode==2))
-			{
-				if((int)message->at(1)==26)
+				if((int)message->at(1)==74)
 				{
-					bpm=(int)message->at(2)*2;
-				}
-				if((int)message->at(1)==104)
-				{
-					seite2=false;
-				}
-				if((int)message->at(1)==105)
-				{
-					seite2=true;
-				}
-			}
-			if(mode==0 and submode==2)
-			{
-				if((int)message->at(1)==21)
-				{
-					aktsongstep=(int)message->at(2)*2;
-				}
-			}
-			if(mode==0 and submode==1)
-			{
-				if((int)message->at(1)==26)
-				{
-					if(programedit==true)
-					{
-						akteditprogram=(int)message->at(2);
-					}
-					if(noteedit==true)
-					{
-						akteditnote=(int)message->at(2);
-					}
-				}
-				if((int)message->at(1)==27)
-				{
-					if(volumeedit==true)
-					{
-						akteditvolume=(int)message->at(2);
-					}
+					bpmcorrect = (float)message->at(2)/100+0.75;
 				}
 			}
 		}
-/*		if(beatstep_in>-1)
+		if(submode==1)
 		{
-			if((int)message->at(1)==7)
+			if((int)message->at(0)==176)
 			{
-				bpm = 2* (int)message->at(2);
+				if((int)message->at(1)==10)
+				{
+					akteditnote = (int)message->at(2);
+				}
+				if((int)message->at(1)==74)
+				{
+					akteditvolume = (int)message->at(2);
+				}
+				if((int)message->at(1)==114)
+				{
+					seleditcommand = (int)((float)message->at(2)/127*79)/16;
+					seleditstep = (int)((float)message->at(2)/127*79) - ((int)((float)message->at(2)/127*79)/16)*16;
+				}
 			}
-			if((int)message->at(1)==114)
+			if((int)message->at(0)==144)
+			{
+				wsmidi.NoteOn(aset[selpattdevice-seite2].mididevice,aset[selpattdevice-seite2].midichannel,(int)message->at(1),(int)message->at(2));
+				if(isediton==true)
+				{
+					pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=2;
+					pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=(int)message->at(1);
+					pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=akteditvolume;
+				}
+				if(iseditoff==true)
+				{
+					pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=3;
+					pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=(int)message->at(1);
+					pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=0;
+				}
+				if(iseditonoff==true)
+				{
+					pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=1;
+					pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=(int)message->at(1);
+					pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=akteditvolume;
+				}
+			}
+			if((int)message->at(0)==128)
+			{
+				wsmidi.NoteOff(aset[selpattdevice-seite2].mididevice,aset[selpattdevice-seite2].midichannel,(int)message->at(1));
+			}
+		}
+
+
+
+/*			if((int)message->at(1)>20 and (int)message->at(1)<26)
 			{
 				for(int i=0;i<5;i++)
 				{
-					pattern_aktpatt[i].aktiv=false;
-				}
-				if((int)message->at(2)>64 and (int)message->at(2)<79)
-				{
-						aktpatt=selpattern[((int)message->at(2)-65)/3];
-						pattern_aktpatt[((int)message->at(2)-65)/3].aktiv=true;
-						aktpatt=selpattern[((int)message->at(2)-65)/3];
-						selpatt=((int)message->at(2)-65)/3;
-				}
-			}
-		}*/
-	}
-/*	else if((int)message->at(0)==144)
-	{
-		if(beatstep_in>-1)
-		{
-			if((int)message->at(1)>=44 and (int)message->at(1)<=51)
-			{
-				if(pattern_aktpatt[selpatt].aktiv==true)
-				{
-					cout << selpatt << endl;
-					nextselpattern[selpatt]=(int)message->at(1)-44;
-					if(playmode==0)
+					if((int)message->at(1)==21+i)
 					{
-						selpattern[selpatt]=nextselpattern[selpatt];
+						nextselpattern[i+5*seite2]=(int)((float)message->at(2)/127*16)-1;
+						if(playmode==0)
+						{
+							selpattern[i+5*seite2]=nextselpattern[i+5*seite2];
+						}
 					}
 				}
-			}		
-			else if((int)message->at(1)>=36 and (int)message->at(1)<=43)
-			{
-				if(pattern_aktpatt[selpatt].aktiv==true)
-				{
-					cout << selpatt << endl;
-					nextselpattern[selpatt]=(int)message->at(1)-28;
-				}
-				if(playmode==0)
-				{
-					selpattern[selpatt]=nextselpattern[selpatt];
-				}
-			}
-		}	
+			}*/
 	}
-	else if((int)message->at(0)>=192 and (int)message->at(0)<208)
-	{
-		for(int i=0;i<5;i++)
-		{
-			if((int)message->at(0)-192==aset[i].midiinchannel)
-			{
-				cout << aset[i].name << " " << (int)message->at(1) << endl;
-				if((int)message->at(1)<16)
-				{
-					nextselpattern[i]=(int)message->at(1);
-				}
-			}
-		}
-	}*/
 	anzeige = true;
 	return;
 }
@@ -890,7 +842,7 @@ void midiinclockcallback( double deltatime, std::vector< unsigned char > *messag
 	{
 		cout << (int)message->at(i) << " ";
 	}
-//	cout << endl;
+	cout << endl;
 
 	if(clockmodeext==true)
 	{
@@ -1190,12 +1142,12 @@ int main(int argc, char* argv[])
 	ThreadCPUClass tcc;
 	tcc.run();
 
+	SDL_Surface* screen;
 	if(SDL_Init(SDL_INIT_VIDEO) == -1)
 	{
 		std::cerr << "Konnte SDL nicht initialisieren! Fehler: " << SDL_GetError() << std::endl;
 		return -1;
 	}
-	SDL_Surface* screen;
 	if(fullscreen==true)
 	{
 		screen = SDL_SetVideoMode(1024, 600 , 32, SDL_DOUBLEBUF|SDL_FULLSCREEN);
@@ -1206,8 +1158,8 @@ int main(int argc, char* argv[])
 	}
 	if(!screen)
 	{
-	    std::cerr << "Konnte SDL-Fenster nicht erzeugen! Fehler: " << SDL_GetError() << std::endl;
-	    return -1;
+		std::cerr << "Konnte SDL-Fenster nicht erzeugen! Fehler: " << SDL_GetError() << std::endl;
+		return -1;
 	}
 	int scorex = screen->w/36;
 	int scorey = screen->h/21;
@@ -1340,7 +1292,6 @@ int main(int argc, char* argv[])
 
 	int aktbank[10] = {0,0,0,0,0,0,0,0,0,0};
 	int selsetmididevice = 0;
-	int seleditstep = 0;
 	SDL_Rect selsetmidideviceRect;
 	selsetmidideviceRect.x = 5.5*scorex;
 	selsetmidideviceRect.y = 4.5*scorey;
@@ -2205,9 +2156,9 @@ int main(int argc, char* argv[])
 // Pattern Note
 				if(submode==1)
 				{
-//					noteonoff.aktiv==true;
-//					noteon.aktiv==true;
-//					noteoff.aktiv==true;
+					iseditonoff = noteonoff.aktiv;
+					isediton = noteon.aktiv;
+					iseditoff = noteoff.aktiv;
 
 					if(edit.aktiv==true)
 					{
@@ -3683,7 +3634,7 @@ int main(int argc, char* argv[])
 									if(clockmodeext==false)
 									{
 										bpmcorfb.aktiv=true;
-										if(bpm>-2.0)
+										if(bpmcorrect>0.02)
 										{
 											bpmcorrect=bpmcorrect-0.01;
 										}
@@ -3705,7 +3656,7 @@ int main(int argc, char* argv[])
 									if(clockmodeext==false)
 									{
 										bpmcor10fb.aktiv=true;
-										if(bpmcorrect>-2.0)
+										if(bpmcorrect>0.2)
 										{
 											bpmcorrect=bpmcorrect-0.10;
 										}
@@ -4302,8 +4253,8 @@ int main(int argc, char* argv[])
 									
 									if(selpattern[selpattdevice-seite2]>=0)
 									{
-										if(pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]>0)
-										{
+//										if(pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]>0)
+//										{
 											if(clear.aktiv==true and edit.aktiv==true)
 											{
 												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=0;
@@ -4335,9 +4286,9 @@ int main(int argc, char* argv[])
 												akteditccb1=pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1];
 												akteditccb2=pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2];
 											}*/
-										}
-										else
-										{
+//										}
+//										else
+//										{
 											if(noteonoff.aktiv==true and edit.aktiv==true)
 											{
 												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=1;
@@ -4368,7 +4319,7 @@ int main(int argc, char* argv[])
 												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=akteditccb1;
 												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=akteditccb2;
 											}
-										}
+//										}
 									}
 								}
 			        		}
