@@ -26,6 +26,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <dirent.h>
 
 #ifdef __arm__
 #include <wiringPi.h>
@@ -166,6 +167,11 @@ int beatstep_in = -1;
 int vmpk_in = -1;
 int beatstep_out = -1;
 int launchkeymini_in = -1;
+
+DIR *dir;
+struct dirent *ent;
+vector<string> directory;
+vector<string> songdir;
 
 timeval start, stop;
 
@@ -1375,6 +1381,7 @@ int main(int argc, char* argv[])
 	WSButton open(6,19,2,2,scorex,scorey,open_image,"");
 	WSButton save(8,19,2,2,scorex,scorey,save_image,"");
 	
+	WSButton songsopen(6,19,2,2,scorex,scorey,open_image,"");
 
 	WSButton ok(16,19,2,2,scorex,scorey,ok_image,"");
 	WSButton cancel(18,19,2,2,scorex,scorey,cancel_image,"");
@@ -2622,6 +2629,7 @@ int main(int argc, char* argv[])
 					load_song[i].show(screen, fontsmall);
 				}
 
+				songsopen.show(screen, fontsmall);
 				ok.show(screen, fontsmall);
 				cancel.show(screen, fontsmall);
 			}
@@ -2731,6 +2739,17 @@ int main(int argc, char* argv[])
 				cancel.show(screen, fontsmall);
 			}
 
+			if(mode==9)  // Open SongDB
+			{
+				SDL_FreeSurface(text);
+				text = TTF_RenderText_Blended(fontbold, "Open Songset", textColor);
+				textPosition.x = screen->w/2-text->w/2;
+				textPosition.y = 2*scorey;
+				SDL_BlitSurface(text, 0, screen, &textPosition);
+
+				ok.show(screen, fontsmall);
+				cancel.show(screen, fontsmall);
+			}
 			SDL_Flip(screen);
 			anzeige=false;
 		}
@@ -4691,6 +4710,28 @@ int main(int argc, char* argv[])
 			        	}
 			        	else if(mode==4)  // Load
 			        	{
+							if(CheckMouse(mousex, mousey, songsopen.button_rect)==true)
+							{
+								directory.clear();
+								sprintf(songpath, "%s/Documents/Sequencegang5", getenv("HOME"));
+								dir = opendir(songpath);
+								while ((ent = readdir(dir)) != NULL)
+								{
+									directory.push_back(ent->d_name);
+								}
+								closedir (dir);
+
+								songdir.clear();
+								for(auto direct: directory)
+								{
+									if (direct.find (".seq5") != string::npos)
+									{
+										cout << direct.substr(0, direct.length()-5) << endl;
+										songdir.push_back(direct.substr(0, direct.length()-5));
+									}
+								}
+								mode=9;
+							}
 							if(CheckMouse(mousex, mousey, ok.button_rect)==true)
 							{
 								for(int i=0;i<16;i++)
@@ -4714,6 +4755,17 @@ int main(int argc, char* argv[])
 									load_song[i].aktiv=true;
 								}
 
+							}
+			        	}
+			        	else if(mode==9)  // Load Songset
+			        	{
+							if(CheckMouse(mousex, mousey, ok.button_rect)==true)
+							{
+								mode=4;
+							}
+							if(CheckMouse(mousex, mousey, cancel.button_rect)==true)
+							{
+								mode=4;
 							}
 			        	}
 			        	else if(mode==6 ) //Save
