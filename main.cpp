@@ -102,6 +102,14 @@ struct songsettings{
 
 vector <songsettings> songset;
 
+struct midiinsettings{
+	string funktion;
+	int wert;
+};
+
+midiinsettings msettmp;
+vector <midiinsettings> midiinset;
+
 int aktstep=15;
 int aktsongstep=0;
 int oldstep=0;
@@ -713,6 +721,14 @@ static int settingscallback(void* data, int argc, char** argv, char** azColName)
 	return 0;
 }
 
+static int midiinsettingscallback(void* data, int argc, char** argv, char** azColName)
+{
+	msettmp.funktion=argv[1];
+	msettmp.wert=atoi(argv[2]);
+
+	return 0;
+}
+
 static int songpatterncallback(void* data, int argc, char** argv, char** azColName)
 {
 	if(atoi(argv[1])<10)
@@ -1282,6 +1298,12 @@ int main(int argc, char* argv[])
 	cout << "Settingsdatenbank erfolgreich geöffnet!" << endl;
 	sprintf(sql, "SELECT * FROM settings");
 	if( sqlite3_exec(settingsdb,sql,settingscallback,0,0) != SQLITE_OK)
+	{
+		cout << "Fehler beim SELECT: " << sqlite3_errmsg(settingsdb) << endl;
+		return 1;
+	}
+	sprintf(sql, "SELECT * FROM MidiInCtrl");
+	if( sqlite3_exec(settingsdb,sql,midiinsettingscallback,0,0) != SQLITE_OK)
 	{
 		cout << "Fehler beim SELECT: " << sqlite3_errmsg(settingsdb) << endl;
 		return 1;
