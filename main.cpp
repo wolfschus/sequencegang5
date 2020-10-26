@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 1.10 11.10.2020
+// Version     : 1.11 26.10.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux/Raspberry PI
 // License     : GNU General Public License v3.0
@@ -1066,7 +1066,7 @@ bool SaveSongDB(int save_song)
 
 	for(int i=0;i<10;i++)
 	{
-		for(int j=0;j<16;j++)
+		for(int j=0;j<64;j++)
 		{
 			for(int k=0;k<16;k++)
 			{
