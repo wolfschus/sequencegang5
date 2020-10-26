@@ -9,6 +9,10 @@ To use binary:
 
 sudo apt install libsdl-gfx1.2-5
 
+For using with Raspberry pi:
+
+sudo apt install wiringpi
+
 To compile:
 
 sudo apt install libsdl1.2-dev libsdl-ttf2.0-dev libsdl-gfx1.2-dev libsdl-mixer1.2-dev libsdl-image1.2-dev librtmidi-dev librtaudio-dev libsqlite3-dev
@@ -25,7 +29,7 @@ make
 
 To install:
 
-cp db/sequencegang5.settings ~/.sequencegang.settings
+cp db/sequencegang5.settings ~/.sequencegang5.settings
 mkdir ~/Documents/Sequencegang5
 cp db/songs.seq5 ~/Documents/Sequencegang5
 
