@@ -190,16 +190,17 @@ struct sysinfo memInfo;
 int onPorts = 0;
 int inPorts = 0;
 vector<string> midiinname;
-vector<string> midioutname;
 
 struct moutdev{
+	int dev;
 	string name;
 	RtMidiOut *midiout;
 };
 
 vector <moutdev> midioutdev;
+moutdev moutdevtmp;
 	
-RtMidiOut *midiout = new RtMidiOut();
+RtMidiOut *midiout = new RtMidiOut(RtMidi::UNSPECIFIED, "Sequencegang5");
 
 
 RtMidiIn *midiin = new RtMidiIn();
@@ -240,7 +241,7 @@ public:
 
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice, "Sequencegang5");
+			midiout->openPort(mididevice);
 			message.clear();
 			message.push_back(128+midichannel);
 			message.push_back(note);
@@ -258,7 +259,7 @@ public:
 
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice, "Sequencegang5");
+			midiout->openPort(mididevice);
 			message.clear();
 			message.push_back(192+midichannel);
 			message.push_back(program);
@@ -274,7 +275,7 @@ public:
 		vector<unsigned char> message;
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice, "Sequencegang5");
+			midiout->openPort(mididevice);
 			message.clear();
 			message.push_back(176+midichannel);
 			message.push_back(0);
@@ -290,7 +291,7 @@ public:
 		vector<unsigned char> message;
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice, "Sequencegang5");
+			midiout->openPort(mididevice);
 			message.clear();
 			message.push_back(243);
 			message.push_back(song);
@@ -305,7 +306,7 @@ public:
 		vector<unsigned char> message;
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice, "Sequencegang5");
+			midiout->openPort(mididevice);
 			message.clear();
 			message.push_back(176+midichannel);
 			message.push_back(120);
@@ -321,7 +322,7 @@ public:
 
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice, "Sequencegang5");
+			midiout->openPort(mididevice);
 			message.clear();
 			message.push_back(176+midichannel);
 			message.push_back(123);
@@ -335,7 +336,7 @@ public:
 		vector<unsigned char> message;
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice, "Sequencegang5");
+			midiout->openPort(mididevice);
 			message.clear();
 			message.push_back(0xFA);
 			midiout->sendMessage( &message );
@@ -349,7 +350,7 @@ public:
 		vector<unsigned char> message;
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice, "Sequencegang5");
+			midiout->openPort(mididevice);
 			message.clear();
 			message.push_back(0xFB);
 			midiout->sendMessage( &message );
@@ -363,7 +364,7 @@ public:
 		vector<unsigned char> message;
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice, "Sequencegang5");
+			midiout->openPort(mididevice);
 			message.clear();
 			message.push_back(0xFC);
 			midiout->sendMessage( &message );
@@ -377,7 +378,7 @@ public:
 		vector<unsigned char> message;
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice, "Sequencegang5");
+			midiout->openPort(mididevice);
 			message.clear();
 			message.push_back(0xF8);
 			midiout->sendMessage( &message );
@@ -1167,7 +1168,6 @@ void ClockInInterrupt()
 
 void CheckMidiOutPorts()
 {
-	size_t found;
 	// Check available Midi Out ports.
 	cout << "Midi Out" << endl;
 	onPorts = midiout->getPortCount();
@@ -1179,10 +1179,10 @@ void CheckMidiOutPorts()
 	{
 		for(int i=0;i<onPorts;i++)
 		{
-			midioutname.push_back(midiout->getPortName(i));
-			found = midiout->getPortName(i).find(":");
-			cout << i << ": " << midiout->getPortName(i) << endl;
-			cout << midiout->getPortName(i).substr(0,found) << endl;
+
+			moutdevtmp.dev = i;
+			moutdevtmp.name = midiout->getPortName(i);
+			midioutdev.push_back(moutdevtmp);
 		}
 	}
 	
@@ -1657,6 +1657,11 @@ int main(int argc, char* argv[])
 
 	CheckMidiOutPorts();
 	
+	for(auto &mout: midioutdev)
+	{
+		cout << mout.dev << " : " << mout.name << endl;
+	}
+
 	CheckMidiInPorts();
 	
 	// MIDI IN Device
@@ -2424,10 +2429,10 @@ int main(int argc, char* argv[])
 				textPosition.y = (5+i)*scorey-text->h/2;
 				SDL_BlitSurface(text, 0, screen, &textPosition);
 				i++;
-				for(auto &mout: midioutname)
+				for(auto &mout: midioutdev)
 				{
 					SDL_FreeSurface(text);
-					sprintf(tmp, "%s",mout.c_str());
+					sprintf(tmp, "%s",mout.name.c_str());
 					text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
 					textPosition.x = 2*scorex;
 					textPosition.y = (5+i)*scorey-text->h/2;
@@ -2572,7 +2577,7 @@ int main(int argc, char* argv[])
 						{
 							if(int(aset[i+6*seite2].mididevice)<onPorts)
 							{
-								sprintf(tmp, "%s",midioutname[aset[i+6*seite2].mididevice].c_str());
+								sprintf(tmp, "%s",midioutdev[aset[i+6*seite2].mididevice].name.c_str());
 							}
 							else
 							{
