@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 1.11 26.10.2020
+// Version     : 1.12 29.10.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux/Raspberry PI
 // License     : GNU General Public License v3.0
@@ -250,6 +250,37 @@ public:
 			message.push_back(program);
 			midiout->sendMessage( &message );
 //			cout << int(message[0]) << " " << int(message[1]) << " " << endl;
+			midiout->closePort();
+		}
+		return;
+	}
+
+	void ArturiaBankChange(uint mididevice, int midichannel, int bank)
+	{
+		vector<unsigned char> message;
+		if(mididevice<midiout->getPortCount())
+		{
+			midiout->openPort(mididevice);
+			message.clear();
+			message.push_back(176+midichannel);
+			message.push_back(0);
+			message.push_back(bank);
+			midiout->sendMessage( &message );
+			midiout->closePort();
+		}
+		return;
+	}
+
+	void ArturiaSongSelect(uint mididevice, int midichannel, int song)
+	{
+		vector<unsigned char> message;
+		if(mididevice<midiout->getPortCount())
+		{
+			midiout->openPort(mididevice);
+			message.clear();
+			message.push_back(243);
+			message.push_back(song);
+			midiout->sendMessage( &message );
 			midiout->closePort();
 		}
 		return;
