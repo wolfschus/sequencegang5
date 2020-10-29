@@ -187,7 +187,21 @@ int anzahlcpu;
 int cputimer = 0;
 struct sysinfo memInfo;
 
+int onPorts = 0;
+unsigned inPorts = 0;
+vector<string> midiinname;
+vector<string> midioutname;
+
+struct moutdev{
+	string name;
+	RtMidiOut *midiout;
+};
+
+vector <moutdev> midioutdev;
+	
 RtMidiOut *midiout = new RtMidiOut();
+
+
 RtMidiIn *midiin = new RtMidiIn();
 RtMidiIn *midiclock = new RtMidiIn();
 
@@ -1151,6 +1165,66 @@ void ClockInInterrupt()
 		return;
 }
 
+void CheckMidiOutPorts()
+{
+	size_t found;
+	// Check available Midi Out ports.
+	cout << "Midi Out" << endl;
+	onPorts = midiout->getPortCount();
+	if ( onPorts == 0 )
+	{
+		cout << "No ports available!" << endl;
+	}
+	else
+	{
+		for(int i=0;i<onPorts;i++)
+		{
+			midioutname.push_back(midiout->getPortName(i));
+			found = midiout->getPortName(i).find(":");
+			cout << i << ": " << midiout->getPortName(i) << endl;
+			cout << midiout->getPortName(i).substr(0,found) << endl;
+		}
+	}
+	
+	return;
+}
+
+void CheckMidiInPorts()
+{
+	size_t found;
+	// Check available Midi In ports.
+	cout << "Midi In" << endl;
+	inPorts = midiin->getPortCount();
+	if ( inPorts == 0 )
+	{
+		cout << "No ports available!" << endl;
+	}
+	else
+	{
+		for(unsigned i=0;i<inPorts;i++)
+		{
+			midiinname.push_back(midiin->getPortName(i));
+			found = midiin->getPortName(i).find(":");
+			
+			cout << i << ": " << midiin->getPortName(i) << endl;
+			cout << midiin->getPortName(i).substr(0,found) << endl;
+			if(midiin->getPortName(i).substr(0,found)=="Arturia BeatStep")
+			{
+				beatstep_in=i;
+			}
+			if(midiin->getPortName(i).substr(0,found)=="Launchkey Mini")
+			{
+				launchkeymini_in=i;
+			}
+			if(midiin->getPortName(i).substr(0,found)=="VMPK Output")
+			{
+				vmpk_in=i;
+			}
+		}
+	}
+}
+
+
 int main(int argc, char* argv[])
 {
 //	bool raspi=false;
@@ -1581,64 +1655,10 @@ int main(int argc, char* argv[])
 	message.push_back(0);
 	message.push_back(0);
 
-	vector<string> midioutname;
-	size_t found;
-
-	// Check available Midi Out ports.
-	cout << "Midi Out" << endl;
-	int onPorts = midiout->getPortCount();
-	if ( onPorts == 0 )
-	{
-		cout << "No ports available!" << endl;
-	}
-	else
-	{
-		for(int i=0;i<onPorts;i++)
-		{
-			midioutname.push_back(midiout->getPortName(i));
-			found = midiout->getPortName(i).find(":");
-			cout << i << ": " << midiout->getPortName(i) << endl;
-			cout << midiout->getPortName(i).substr(0,found) << endl;
-			if(midiout->getPortName(i).substr(0,found)=="Arturia BeatStep")
-			{
-				beatstep_out=i;
-			}
-		}
-	}
-
-	vector<string> midiinname;
-
-	// Check available Midi In ports.
-	cout << "Midi In" << endl;
-	unsigned inPorts = midiin->getPortCount();
-	if ( inPorts == 0 )
-	{
-		cout << "No ports available!" << endl;
-	}
-	else
-	{
-		for(unsigned i=0;i<inPorts;i++)
-		{
-			midiinname.push_back(midiin->getPortName(i));
-			found = midiin->getPortName(i).find(":");
-			
-			cout << i << ": " << midiin->getPortName(i) << endl;
-			cout << midiin->getPortName(i).substr(0,found) << endl;
-			if(midiin->getPortName(i).substr(0,found)=="Arturia BeatStep")
-			{
-				beatstep_in=i;
-			}
-			if(midiin->getPortName(i).substr(0,found)=="Launchkey Mini")
-			{
-				launchkeymini_in=i;
-			}
-			if(midiin->getPortName(i).substr(0,found)=="VMPK Output")
-			{
-				vmpk_in=i;
-			}
-		}
-	}
-
+	CheckMidiOutPorts();
+	
+	CheckMidiInPorts();
+	
 	// MIDI IN Device
 	if(aset[5].mididevice<inPorts)
 	{
