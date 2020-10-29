@@ -80,7 +80,7 @@ bool isclipboard = false;
 
 struct seqsettings{
 	string name;
-	unsigned mididevice;
+	int mididevice;
 	unsigned midichannel;
 	int minprog;
 	int maxprog;
@@ -188,7 +188,7 @@ int cputimer = 0;
 struct sysinfo memInfo;
 
 int onPorts = 0;
-unsigned inPorts = 0;
+int inPorts = 0;
 vector<string> midiinname;
 vector<string> midioutname;
 
@@ -216,11 +216,11 @@ public:
 //	  pthread_create(&thread, NULL, entry, this);
 //   }
 
-	void NoteOn(uint mididevice, int midichannel, int note, int volume)
+	void NoteOn(int mididevice, int midichannel, int note, int volume)
 	{
 		vector<unsigned char> message;
 
-		if(mididevice<midiout->getPortCount())
+		if(mididevice<onPorts)
 		{
 			midiout->openPort(mididevice);
 			message.clear();
@@ -234,11 +234,11 @@ public:
 		return;
 	}
 
-	void NoteOff(uint mididevice, int midichannel, int note)
+	void NoteOff(int mididevice, int midichannel, int note)
 	{
 		vector<unsigned char> message;
 
-		if(mididevice<midiout->getPortCount())
+		if(mididevice<onPorts)
 		{
 			midiout->openPort(mididevice);
 			message.clear();
@@ -252,11 +252,11 @@ public:
 		return;
 	}
 
-	void ProgramChange(uint mididevice, int midichannel, int program)
+	void ProgramChange(int mididevice, int midichannel, int program)
 	{
 		vector<unsigned char> message;
 
-		if(mididevice<midiout->getPortCount())
+		if(mididevice<onPorts)
 		{
 			midiout->openPort(mididevice);
 			message.clear();
@@ -269,10 +269,10 @@ public:
 		return;
 	}
 
-	void ArturiaBankChange(uint mididevice, int midichannel, int bank)
+	void ArturiaBankChange(int mididevice, int midichannel, int bank)
 	{
 		vector<unsigned char> message;
-		if(mididevice<midiout->getPortCount())
+		if(mididevice<onPorts)
 		{
 			midiout->openPort(mididevice);
 			message.clear();
@@ -285,10 +285,10 @@ public:
 		return;
 	}
 
-	void ArturiaSongSelect(uint mididevice, int midichannel, int song)
+	void ArturiaSongSelect(int mididevice, int midichannel, int song)
 	{
 		vector<unsigned char> message;
-		if(mididevice<midiout->getPortCount())
+		if(mididevice<onPorts)
 		{
 			midiout->openPort(mididevice);
 			message.clear();
@@ -300,10 +300,10 @@ public:
 		return;
 	}
 
-	void AllSoundsOff(uint mididevice, int midichannel)
+	void AllSoundsOff(int mididevice, int midichannel)
 	{
 		vector<unsigned char> message;
-		if(mididevice<midiout->getPortCount())
+		if(mididevice<onPorts)
 		{
 			midiout->openPort(mididevice);
 			message.clear();
@@ -315,11 +315,11 @@ public:
 		}
 	}
 
-	void AllNotesOff(uint mididevice, int midichannel)
+	void AllNotesOff(int mididevice, int midichannel)
 	{
 		vector<unsigned char> message;
 
-		if(mididevice<midiout->getPortCount())
+		if(mididevice<onPorts)
 		{
 			midiout->openPort(mididevice);
 			message.clear();
@@ -330,10 +330,10 @@ public:
 			midiout->closePort();
 		}
 	}
-	void Clock_Start(uint mididevice)
+	void Clock_Start(int mididevice)
 	{
 		vector<unsigned char> message;
-		if(mididevice<midiout->getPortCount())
+		if(mididevice<onPorts)
 		{
 			midiout->openPort(mididevice);
 			message.clear();
@@ -344,10 +344,10 @@ public:
 		return;
 	}
 
-	void Clock_Cont(uint mididevice)
+	void Clock_Cont(int mididevice)
 	{
 		vector<unsigned char> message;
-		if(mididevice<midiout->getPortCount())
+		if(mididevice<onPorts)
 		{
 			midiout->openPort(mididevice);
 			message.clear();
@@ -358,10 +358,10 @@ public:
 		return;
 	}
 
-	void Clock_Stop(uint mididevice)
+	void Clock_Stop(int mididevice)
 	{
 		vector<unsigned char> message;
-		if(mididevice<midiout->getPortCount())
+		if(mididevice<onPorts)
 		{
 			midiout->openPort(mididevice);
 			message.clear();
@@ -372,10 +372,10 @@ public:
 		return;
 	}
 
-	void Clock_Tick(uint mididevice)
+	void Clock_Tick(int mididevice)
 	{
 		vector<unsigned char> message;
-		if(mididevice<midiout->getPortCount())
+		if(mididevice<onPorts)
 		{
 			midiout->openPort(mididevice);
 			message.clear();
@@ -1201,7 +1201,7 @@ void CheckMidiInPorts()
 	}
 	else
 	{
-		for(unsigned i=0;i<inPorts;i++)
+		for(int i=0;i<inPorts;i++)
 		{
 			midiinname.push_back(midiin->getPortName(i));
 			found = midiin->getPortName(i).find(":");
@@ -4571,7 +4571,7 @@ int main(int argc, char* argv[])
 									settings_up.aktiv=true;
 									if(selsetmididevice<6) // MidiOut
 									{
-										if(aset[selsetmididevice-1+6*seite2].mididevice<midiout->getPortCount()-1)
+										if(aset[selsetmididevice-1+6*seite2].mididevice<onPorts-1)
 										{
 											aset[selsetmididevice-1+6*seite2].mididevice++;
 											changesettings=true;
@@ -4579,7 +4579,7 @@ int main(int argc, char* argv[])
 									}
 									else // MidiIn
 									{
-										if(aset[selsetmididevice-1+6*seite2].mididevice<midiin->getPortCount()-1)
+										if(aset[selsetmididevice-1+6*seite2].mididevice<inPorts-1)
 										{
 											aset[selsetmididevice-1+6*seite2].mididevice++;
 											changesettings=true;
