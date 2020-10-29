@@ -222,7 +222,7 @@ public:
 
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
+			midiout->openPort(mididevice, "Sequencegang5");
 			message.clear();
 			message.push_back(144+midichannel);
 			message.push_back(note);
@@ -240,7 +240,7 @@ public:
 
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
+			midiout->openPort(mididevice, "Sequencegang5");
 			message.clear();
 			message.push_back(128+midichannel);
 			message.push_back(note);
@@ -258,7 +258,7 @@ public:
 
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
+			midiout->openPort(mididevice, "Sequencegang5");
 			message.clear();
 			message.push_back(192+midichannel);
 			message.push_back(program);
@@ -274,7 +274,7 @@ public:
 		vector<unsigned char> message;
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
+			midiout->openPort(mididevice, "Sequencegang5");
 			message.clear();
 			message.push_back(176+midichannel);
 			message.push_back(0);
@@ -290,7 +290,7 @@ public:
 		vector<unsigned char> message;
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
+			midiout->openPort(mididevice, "Sequencegang5");
 			message.clear();
 			message.push_back(243);
 			message.push_back(song);
@@ -305,7 +305,7 @@ public:
 		vector<unsigned char> message;
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
+			midiout->openPort(mididevice, "Sequencegang5");
 			message.clear();
 			message.push_back(176+midichannel);
 			message.push_back(120);
@@ -321,7 +321,7 @@ public:
 
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
+			midiout->openPort(mididevice, "Sequencegang5");
 			message.clear();
 			message.push_back(176+midichannel);
 			message.push_back(123);
@@ -335,7 +335,7 @@ public:
 		vector<unsigned char> message;
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
+			midiout->openPort(mididevice, "Sequencegang5");
 			message.clear();
 			message.push_back(0xFA);
 			midiout->sendMessage( &message );
@@ -349,7 +349,7 @@ public:
 		vector<unsigned char> message;
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
+			midiout->openPort(mididevice, "Sequencegang5");
 			message.clear();
 			message.push_back(0xFB);
 			midiout->sendMessage( &message );
@@ -363,7 +363,7 @@ public:
 		vector<unsigned char> message;
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
+			midiout->openPort(mididevice, "Sequencegang5");
 			message.clear();
 			message.push_back(0xFC);
 			midiout->sendMessage( &message );
@@ -377,7 +377,7 @@ public:
 		vector<unsigned char> message;
 		if(mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
+			midiout->openPort(mididevice, "Sequencegang5");
 			message.clear();
 			message.push_back(0xF8);
 			midiout->sendMessage( &message );
