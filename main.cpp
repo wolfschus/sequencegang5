@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 1.12 29.10.2020
+// Version     : 1.20 30.10.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux/Raspberry PI
 // License     : GNU General Public License v3.0
@@ -199,9 +199,10 @@ struct moutdev{
 
 vector <moutdev> midioutdev;
 moutdev moutdevtmp;
+
+RtMidiOut *midioutdevices[10];
 	
 RtMidiOut *midiout = new RtMidiOut(RtMidi::UNSPECIFIED, "Sequencegang5");
-
 
 RtMidiIn *midiin = new RtMidiIn();
 RtMidiIn *midiclock = new RtMidiIn();
@@ -217,130 +218,110 @@ public:
 //	  pthread_create(&thread, NULL, entry, this);
 //   }
 
-	void NoteOn(int mididevice, int midichannel, int note, int volume)
+	void NoteOn(int mididevice, int note, int volume)
 	{
 		vector<unsigned char> message;
-
-		if(mididevice<onPorts)
+		if(aset[mididevice].mididevice<onPorts)
 		{
-			midiout->openPort(mididevice, "Sequencegang5");
 			message.clear();
-			message.push_back(144+midichannel);
+			message.push_back(144+aset[mididevice].midichannel);
 			message.push_back(note);
 			message.push_back(volume);
-			midiout->sendMessage( &message );
-//			cout << int(message[0]) << " " << int(message[1]) << " " << int(message[2]) << endl;
-			midiout->closePort();
+			midioutdevices[mididevice]->sendMessage( &message );
 		}
 		return;
 	}
 
-	void NoteOff(int mididevice, int midichannel, int note)
+	void NoteOff(int mididevice, int note)
 	{
 		vector<unsigned char> message;
 
-		if(mididevice<onPorts)
+		if(aset[mididevice].mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
 			message.clear();
-			message.push_back(128+midichannel);
+			message.push_back(128+aset[mididevice].midichannel);
 			message.push_back(note);
 			message.push_back(0);
-			midiout->sendMessage( &message );
-//			cout << int(message[0]) << " " << int(message[1]) << " " << int(message[2]) << endl;
-			midiout->closePort();
+			midioutdevices[mididevice]->sendMessage( &message );
 		}
 		return;
 	}
 
-	void ProgramChange(int mididevice, int midichannel, int program)
+	void ProgramChange(int mididevice, int program)
 	{
 		vector<unsigned char> message;
 
-		if(mididevice<onPorts)
+		if(aset[mididevice].mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
 			message.clear();
-			message.push_back(192+midichannel);
+			message.push_back(192+aset[mididevice].midichannel);
 			message.push_back(program);
-			midiout->sendMessage( &message );
-//			cout << int(message[0]) << " " << int(message[1]) << " " << endl;
-			midiout->closePort();
+			midioutdevices[mididevice]->sendMessage( &message );
 		}
 		return;
 	}
 
-	void ArturiaBankChange(int mididevice, int midichannel, int bank)
+	void ArturiaBankChange(int mididevice, int bank)
 	{
 		vector<unsigned char> message;
-		if(mididevice<onPorts)
+		if(aset[mididevice].mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
 			message.clear();
-			message.push_back(176+midichannel);
+			message.push_back(176+aset[mididevice].midichannel);
 			message.push_back(0);
 			message.push_back(bank);
-			midiout->sendMessage( &message );
-			midiout->closePort();
+			midioutdevices[mididevice]->sendMessage( &message );
 		}
 		return;
 	}
 
-	void ArturiaSongSelect(int mididevice, int midichannel, int song)
+	void ArturiaSongSelect(int mididevice, int song)
 	{
 		vector<unsigned char> message;
-		if(mididevice<onPorts)
+		if(aset[mididevice].mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
 			message.clear();
 			message.push_back(243);
 			message.push_back(song);
-			midiout->sendMessage( &message );
-			midiout->closePort();
+			midioutdevices[mididevice]->sendMessage( &message );
 		}
 		return;
 	}
 
-	void AllSoundsOff(int mididevice, int midichannel)
+	void AllSoundsOff(int mididevice)
 	{
 		vector<unsigned char> message;
-		if(mididevice<onPorts)
+		if(aset[mididevice].mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
 			message.clear();
-			message.push_back(176+midichannel);
+			message.push_back(176+aset[mididevice].midichannel);
 			message.push_back(120);
 			message.push_back(0);
-			midiout->sendMessage( &message );
-			midiout->closePort();
+			midioutdevices[mididevice]->sendMessage( &message );
 		}
 	}
 
-	void AllNotesOff(int mididevice, int midichannel)
+	void AllNotesOff(int mididevice)
 	{
 		vector<unsigned char> message;
 
-		if(mididevice<onPorts)
+		if(aset[mididevice].mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
 			message.clear();
-			message.push_back(176+midichannel);
+			message.push_back(176+aset[mididevice].midichannel);
 			message.push_back(123);
 			message.push_back(0);
-			midiout->sendMessage( &message );
-			midiout->closePort();
+			midioutdevices[mididevice]->sendMessage( &message );
 		}
 	}
 	void Clock_Start(int mididevice)
 	{
 		vector<unsigned char> message;
-		if(mididevice<onPorts)
+		if(aset[mididevice].mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
 			message.clear();
 			message.push_back(0xFA);
-			midiout->sendMessage( &message );
-			midiout->closePort();
+			midioutdevices[mididevice]->sendMessage( &message );
 		}
 		return;
 	}
@@ -348,13 +329,11 @@ public:
 	void Clock_Cont(int mididevice)
 	{
 		vector<unsigned char> message;
-		if(mididevice<onPorts)
+		if(aset[mididevice].mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
 			message.clear();
 			message.push_back(0xFB);
-			midiout->sendMessage( &message );
-			midiout->closePort();
+			midioutdevices[mididevice]->sendMessage( &message );
 		}
 		return;
 	}
@@ -362,13 +341,11 @@ public:
 	void Clock_Stop(int mididevice)
 	{
 		vector<unsigned char> message;
-		if(mididevice<onPorts)
+		if(aset[mididevice].mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
 			message.clear();
 			message.push_back(0xFC);
-			midiout->sendMessage( &message );
-			midiout->closePort();
+			midioutdevices[mididevice]->sendMessage( &message );
 		}
 		return;
 	}
@@ -376,13 +353,11 @@ public:
 	void Clock_Tick(int mididevice)
 	{
 		vector<unsigned char> message;
-		if(mididevice<onPorts)
+		if(aset[mididevice].mididevice<onPorts)
 		{
-			midiout->openPort(mididevice);
 			message.clear();
 			message.push_back(0xF8);
-			midiout->sendMessage( &message );
-			midiout->closePort();
+			midioutdevices[mididevice]->sendMessage( &message );
 		}
 		return;
 	}
@@ -395,11 +370,11 @@ public:
 		aktsongstep=255;
 		if(clockmodemaster==true and playmode==0)
 		{
-			Clock_Start(aset[11].mididevice);
+			Clock_Start(11);
 		}
 		else if(clockmodemaster==true and playmode==2)
 		{
-			Clock_Cont(aset[11].mididevice);
+			Clock_Cont(11);
 		}
 	}
 
@@ -409,7 +384,7 @@ public:
 		timerrun=false;
 		if(clockmodemaster==true and playmode==1)
 		{
-			Clock_Stop(aset[11].mididevice);
+			Clock_Stop(11);
 		}
 
 	}
@@ -427,7 +402,11 @@ public:
 //		aktsongstep=255;
 		for(int i=0;i<5;i++)
 		{
-			AllNotesOff(aset[i].mididevice,aset[i].midichannel);
+			AllNotesOff(i);
+		}
+		for(int i=5;i<11;i++)
+		{
+			AllNotesOff(i);
 		}
 	}
 
@@ -460,7 +439,7 @@ public:
 		  aktstep++;
 	  		if(clockmodemaster==true and playmode==1)
 			{
-				Clock_Tick(aset[11].mididevice);
+				Clock_Tick(11);
 			}
 
 		  if(aktstep>maxstep)
@@ -477,22 +456,22 @@ public:
 					Stop();
 					for(int i=0;i<5;i++)
 					{
-						AllNotesOff(aset[i].mididevice,aset[i].midichannel);
+						AllNotesOff(i);
 					}
 					for(int i=5;i<11;i++)
 					{
-						AllNotesOff(aset[i].mididevice,aset[i].midichannel);
+						AllNotesOff(i);
 					}
 				}
 				else if(songpatt[10][aktsongstep]==2)
 				{
 					for(int i=0;i<5;i++)
 					{
-						AllNotesOff(aset[i].mididevice,aset[i].midichannel);
+						AllNotesOff(i);
 					}
 					for(int i=5;i<11;i++)
 					{
-						AllNotesOff(aset[i].mididevice,aset[i].midichannel);
+						AllNotesOff(i);
 					}
 				}
 				else if(songpatt[10][aktsongstep]>=60)
@@ -526,7 +505,7 @@ public:
 		  }
 		if(clockmodemaster==true and playmode==1)
 		{
-			Clock_Tick(aset[11].mididevice);
+			Clock_Tick(11);
 		}
 	  }
 	}
@@ -549,24 +528,24 @@ public:
 		{
 			if(lastpattern[aktdev][i][0]==1)
 			{
-				NoteOff(aset[aktdev2].mididevice,aset[aktdev2].midichannel,lastpattern[aktdev][i][1]);
+				NoteOff(aktdev2,lastpattern[aktdev][i][1]);
 			}
 			if(pattern[aktdev][selpattern[aktdev]][step][i][0]==1)
 			{
-				NoteOn(aset[aktdev2].mididevice,aset[aktdev2].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1], pattern[aktdev][selpattern[aktdev]][step][i][2]);
+				NoteOn(aktdev2, pattern[aktdev][selpattern[aktdev]][step][i][1], pattern[aktdev][selpattern[aktdev]][step][i][2]);
 //				cout << "NoteOn" << " : " << int(pattern[aktdev][selpattern[aktdev]][step][i][1]) << endl;
 			}
 			if(pattern[aktdev][selpattern[aktdev]][step][i][0]==2)
 			{
-				NoteOn(aset[aktdev2].mididevice,aset[aktdev2].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1], pattern[aktdev][selpattern[aktdev]][step][i][2]);
+				NoteOn(aktdev2, pattern[aktdev][selpattern[aktdev]][step][i][1], pattern[aktdev][selpattern[aktdev]][step][i][2]);
 			}
 			if(pattern[aktdev][selpattern[aktdev]][step][i][0]==3)
 			{
-				NoteOff(aset[aktdev2].mididevice,aset[aktdev2].midichannel,pattern[aktdev][selpattern[aktdev]][step][i][1]);
+				NoteOff(aktdev2,pattern[aktdev][selpattern[aktdev]][step][i][1]);
 			}
 			if(pattern[aktdev][selpattern[aktdev]][step][i][0]==4)
 			{
-				ProgramChange(aset[aktdev2].mididevice,aset[aktdev2].midichannel, pattern[aktdev][selpattern[aktdev]][step][i][1]);
+				ProgramChange(aktdev2, pattern[aktdev][selpattern[aktdev]][step][i][1]);
 			}
 		}
 	}
@@ -854,7 +833,7 @@ void midiincallback( double deltatime, std::vector< unsigned char > *message, vo
 			}
 			if((int)message->at(0)==144)
 			{
-				wsmidi.NoteOn(aset[selpattdevice-seite2].mididevice,aset[selpattdevice-seite2].midichannel,(int)message->at(1),(int)message->at(2));
+				wsmidi.NoteOn(selpattdevice-seite2,(int)message->at(1),(int)message->at(2));
 				if(isediton==true)
 				{
 					pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=2;
@@ -876,7 +855,7 @@ void midiincallback( double deltatime, std::vector< unsigned char > *message, vo
 			}
 			if((int)message->at(0)==128)
 			{
-				wsmidi.NoteOff(aset[selpattdevice-seite2].mididevice,aset[selpattdevice-seite2].midichannel,(int)message->at(1));
+				wsmidi.NoteOff(selpattdevice-seite2,(int)message->at(1));
 			}
 		}
 
@@ -1185,8 +1164,42 @@ void CheckMidiOutPorts()
 			midioutdev.push_back(moutdevtmp);
 		}
 	}
-	
+
+	for(int i=0;i<5;i++)
+	{
+		midioutdevices[i] = new RtMidiOut(RtMidi::UNSPECIFIED, aset[i].name.c_str());
+		if(aset[i].mididevice<onPorts)
+		{
+			midioutdevices[i]->openPort(aset[i].mididevice, aset[i].name.c_str());
+		}
+		else if(aset[i].mididevice==256)
+		{
+			midioutdevices[i]->openPort(0, aset[i].name.c_str());
+		}
+	}
+	for(int i=5;i<10;i++)
+	{
+		midioutdevices[i] = new RtMidiOut(RtMidi::UNSPECIFIED, aset[i+1].name.c_str());
+		if(aset[i+1].mididevice<onPorts)
+		{
+			midioutdevices[i]->openPort(aset[i+1].mididevice, aset[i+1].name.c_str());
+		}
+		else if(aset[i].mididevice==256)
+		{
+			midioutdevices[i]->openPort(0, aset[i+1].name.c_str());
+		}
+	}
+
+
 	return;
+}
+
+void CloseMidiOutPorts()
+{
+	for(int i=0;i<10;i++)
+	{
+		midioutdevices[i]->closePort();
+	}
 }
 
 void CheckMidiInPorts()
@@ -1655,13 +1668,6 @@ int main(int argc, char* argv[])
 	message.push_back(0);
 	message.push_back(0);
 
-	CheckMidiOutPorts();
-	
-	for(auto &mout: midioutdev)
-	{
-		cout << mout.dev << " : " << mout.name << endl;
-	}
-
 	CheckMidiInPorts();
 	
 	// MIDI IN Device
@@ -1680,6 +1686,13 @@ int main(int argc, char* argv[])
 		midiclock->setCallback( &midiinclockcallback );
 		// Don't ignore sysex, timing, or active sensing messages.
 		midiclock->ignoreTypes( false, false, false );
+	}
+
+	CheckMidiOutPorts();
+	
+	for(auto &mout: midioutdev)
+	{
+		cout << mout.dev << " : " << mout.name << endl;
 	}
 
 // Anzeige
@@ -2579,6 +2592,10 @@ int main(int argc, char* argv[])
 							{
 								sprintf(tmp, "%s",midioutdev[aset[i+6*seite2].mididevice].name.c_str());
 							}
+							else if(int(aset[i+6*seite2].mididevice)==256)
+							{
+								sprintf(tmp, "%s","No Mididevice connected");
+							}
 							else
 							{
 								sprintf(tmp, "%s","Mididevice not available");
@@ -2589,6 +2606,10 @@ int main(int argc, char* argv[])
 							if(aset[i+6*seite2].mididevice<inPorts)
 							{
 								sprintf(tmp, "%s",midiinname[aset[i+6*seite2].mididevice].c_str());
+							}
+							else if(int(aset[i+6*seite2].mididevice)==256)
+							{
+								sprintf(tmp, "%s","No Mididevice connected");
 							}
 							else
 							{
@@ -4518,6 +4539,8 @@ int main(int argc, char* argv[])
 									sqlite3_close(settingsdb);
 									changesettings=false;
 								}
+								CloseMidiOutPorts();
+								CheckMidiOutPorts();
 								mode=0;
 							}
 							if(CheckMouse(mousex, mousey, devnamerahmen)==true)
@@ -4576,7 +4599,12 @@ int main(int argc, char* argv[])
 									settings_up.aktiv=true;
 									if(selsetmididevice<6) // MidiOut
 									{
-										if(aset[selsetmididevice-1+6*seite2].mididevice<onPorts-1)
+										if(aset[selsetmididevice-1+6*seite2].mididevice==256)
+										{
+											aset[selsetmididevice-1+6*seite2].mididevice=0;
+											changesettings=true;
+										}
+										else if(aset[selsetmididevice-1+6*seite2].mididevice<onPorts-1)
 										{
 											aset[selsetmididevice-1+6*seite2].mididevice++;
 											changesettings=true;
@@ -4584,6 +4612,11 @@ int main(int argc, char* argv[])
 									}
 									else // MidiIn
 									{
+										if(aset[selsetmididevice-1+6*seite2].mididevice==256)
+										{
+											aset[selsetmididevice-1+6*seite2].mididevice=0;
+											changesettings=true;
+										}
 										if(aset[selsetmididevice-1+6*seite2].mididevice<inPorts-1)
 										{
 											aset[selsetmididevice-1+6*seite2].mididevice++;
@@ -4602,9 +4635,17 @@ int main(int argc, char* argv[])
 								else if(CheckMouse(mousex, mousey, settings_down.button_rect)==true)
 								{
 									settings_down.aktiv=true;
-									if(aset[selsetmididevice-1+6*seite2].mididevice>0 and aset[selsetmididevice-1].mididevice<255)
+									if(aset[selsetmididevice-1+6*seite2].mididevice>0)
 									{
-										aset[selsetmididevice-1+6*seite2].mididevice--;
+										if(aset[selsetmididevice-1+6*seite2].mididevice<255)
+										{
+											aset[selsetmididevice-1+6*seite2].mididevice--;
+											changesettings=true;
+										}
+									}
+									else
+									{
+										aset[selsetmididevice-1+6*seite2].mididevice=256;
 										changesettings=true;
 									}
 									if(selsetmidichannel>0)
@@ -5079,5 +5120,8 @@ int main(int argc, char* argv[])
 			}
 		}
 	}
+	
+	CloseMidiOutPorts();
+
 	SDL_Quit();
 }
