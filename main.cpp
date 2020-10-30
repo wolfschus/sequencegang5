@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 1.20 30.10.2020
+// Version     : 1.21 30.10.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux/Raspberry PI
 // License     : GNU General Public License v3.0
@@ -75,6 +75,7 @@ char playmode = 0;
 char pattern[10][64][16][5][3];
 int songpatt[11][256];
 char lastpattern[10][5][3];
+char startpattern[10][5][3];
 char clipboard[16][5][3];
 bool isclipboard = false;
 
@@ -994,6 +995,7 @@ bool Clearlastpattern()
 	}
 	return true;
 }
+
 bool Clearsongpattern()
 {
 	for(int i=0;i<11;i++)
@@ -4438,6 +4440,21 @@ int main(int argc, char* argv[])
 												pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=akteditccb2;
 											}
 //										}
+									}
+									else
+									{
+										if(clear.aktiv==true and edit.aktiv==true and seleditstep==0)
+										{
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=0;
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=0;
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=0;
+										}
+										else if(program.aktiv==true and edit.aktiv==true and seleditstep==0)
+										{
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=4;
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=akteditprogram;
+											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=0;
+										}
 									}
 								}
 			        		}
