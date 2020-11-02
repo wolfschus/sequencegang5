@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 1.21 30.10.2020
+// Version     : 1.22 02.11.2020
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux/Raspberry PI
 // License     : GNU General Public License v3.0
@@ -365,20 +365,48 @@ public:
 
 	void Play()
 	{
+		if(playmode==0)
+		{
+			Start();
+		}
+		if(clockmodemaster==true)
+		{
+			if(playmode==0)
+			{
+				Clock_Start(11);
+			}
+			if(playmode==2)
+			{
+				Clock_Cont(11);
+			}
+		}
 		playmode=1;
 		timerrun=true;
 		aktstep=15;
 		aktsongstep=255;
-		if(clockmodemaster==true and playmode==0)
-		{
-			Clock_Start(11);
-		}
-		else if(clockmodemaster==true and playmode==2)
-		{
-			Clock_Cont(11);
-		}
 	}
 
+	void Start()
+	{
+		for(int i=0;i<10;i++)
+		{
+			for(int j=0;j<5;j++)
+			{
+				if(startpattern[i][j][0]==4)
+				{
+					if(i<5)
+					{
+						ProgramChange(i, startpattern[i][j][1]);
+					}
+					else
+					{
+						ProgramChange(i+1, startpattern[i][j][1]);
+					}
+				}
+			}
+		}
+	}
+	
 	void Pause()
 	{
 		playmode=2;
@@ -765,9 +793,18 @@ static int songpatterncallback(void* data, int argc, char** argv, char** azColNa
 {
 	if(atoi(argv[1])<10)
 	{
-		pattern[atoi(argv[1])][atoi(argv[2])][atoi(argv[3])][atoi(argv[4])][0]=atoi(argv[5]);
-		pattern[atoi(argv[1])][atoi(argv[2])][atoi(argv[3])][atoi(argv[4])][1]=atoi(argv[6]);
-		pattern[atoi(argv[1])][atoi(argv[2])][atoi(argv[3])][atoi(argv[4])][2]=atoi(argv[7]);
+		if(atoi(argv[2])==-1)
+		{
+			startpattern[atoi(argv[1])][atoi(argv[4])][0]=atoi(argv[5]);
+			startpattern[atoi(argv[1])][atoi(argv[4])][1]=atoi(argv[6]);
+			startpattern[atoi(argv[1])][atoi(argv[4])][2]=atoi(argv[7]);
+		}
+		else
+		{
+			pattern[atoi(argv[1])][atoi(argv[2])][atoi(argv[3])][atoi(argv[4])][0]=atoi(argv[5]);
+			pattern[atoi(argv[1])][atoi(argv[2])][atoi(argv[3])][atoi(argv[4])][1]=atoi(argv[6]);
+			pattern[atoi(argv[1])][atoi(argv[2])][atoi(argv[3])][atoi(argv[4])][2]=atoi(argv[7]);
+		}
 	}
 	else if(atoi(argv[1])<21)
 	{
@@ -996,6 +1033,21 @@ bool Clearlastpattern()
 	return true;
 }
 
+bool Clearstartpattern()
+{
+	for(int i=0;i<10;i++)
+	{
+		for(int l=0;l<5;l++)
+		{
+			for(int m=0;m<3;m++)
+			{
+				startpattern[i][l][m]=0;
+			}
+		}
+	}
+	return true;
+}
+
 bool Clearsongpattern()
 {
 	for(int i=0;i<11;i++)
@@ -1014,6 +1066,7 @@ int LoadScene(int nr)
 	Clearpattern();
 	Clearsongpattern();
 	Clearlastpattern();
+	Clearstartpattern();
 	sqlite3 *songsdb;
 	if(sqlite3_open(songpath, &songsdb) != SQLITE_OK)
 	{
@@ -1112,6 +1165,7 @@ bool SaveSongDB(int save_song)
 			}
 		}
 	}
+// Songpattern
 	for(int i=0;i<11;i++)
 	{
 		for(int j=0;j<256;j++)
@@ -1127,6 +1181,22 @@ bool SaveSongDB(int save_song)
 				
 			} 
 			
+		}
+	}
+// Startpattern
+	for(int i=0;i<10;i++)
+	{
+				for(int l=0;l<5;l++)
+				{
+					if(startpattern[i][l][0]>0)
+					{
+						sprintf(sql, "INSERT INTO Song%d (device,pattern,pos,command,data1,data2) VALUES (%d,%d,%d,%d,%d,%d);",save_song-1,i,-1,l,startpattern[i][l][0],startpattern[i][l][1],startpattern[i][l][2]);
+						if( sqlite3_exec(songsdb,sql,NULL,0,0) != SQLITE_OK)
+						{
+							cout << "Fehler beim INSERT: " << sqlite3_errmsg(songsdb) << endl;
+							return 1;
+						}
+					}
 		}
 	}
 	sqlite3_close(songsdb);
@@ -1881,105 +1951,151 @@ int main(int argc, char* argv[])
 							}
 							boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x8F8F8FFF);
 
-							if(pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][0]==1)
+							if(selpattern[selpattdevice-seite2]>=0)
 							{
-								boxColor(screen, 4*scorex+(2*i)*scorex+3,5*scorey+(2*j)*scorey-3-(((2*scorey-6)*pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][2])/127),6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0xFFFF8FFF);
-								SDL_FreeSurface(text);
-								text = TTF_RenderText_Blended(fontextrasmall, "Note", blackColor);
-								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
-								textPosition.y = 3*scorey+(2*j)*scorey+4;
-								SDL_BlitSurface(text, 0, screen, &textPosition);
-								SDL_FreeSurface(text);
-								text = TTF_RenderText_Blended(fontextrasmall, "OnOff", blackColor);
-								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
-								textPosition.y = 3*scorey+(2*j)*scorey+6+text->h;
-								SDL_BlitSurface(text, 0, screen, &textPosition);
-								SDL_FreeSurface(text);
-								sprintf(tmp, "%s%d",note[pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]-((pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]/12)*12)],pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]/12-2);
-								text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
-								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
-								textPosition.y = 3*scorey+(2*j)*scorey+8+2*text->h;
-								SDL_BlitSurface(text, 0, screen, &textPosition);
+								if(pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][0]==1)
+								{
+									boxColor(screen, 4*scorex+(2*i)*scorex+3,5*scorey+(2*j)*scorey-3-(((2*scorey-6)*pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][2])/127),6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0xFFFF8FFF);
+									SDL_FreeSurface(text);
+									text = TTF_RenderText_Blended(fontextrasmall, "Note", blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+4;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+									SDL_FreeSurface(text);
+									text = TTF_RenderText_Blended(fontextrasmall, "OnOff", blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+6+text->h;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+									SDL_FreeSurface(text);
+									sprintf(tmp, "%s%d",note[pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]-((pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]/12)*12)],pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]/12-2);
+									text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+8+2*text->h;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+								}
+								if(pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][0]==2)
+								{
+									boxColor(screen, 4*scorex+(2*i)*scorex+3,5*scorey+(2*j)*scorey-3-(((2*scorey-6)*pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][2])/127),6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x8FFF8FFF);
+									SDL_FreeSurface(text);
+									text = TTF_RenderText_Blended(fontextrasmall, "Note", blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+4;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+									SDL_FreeSurface(text);
+									text = TTF_RenderText_Blended(fontextrasmall, "On", blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+6+text->h;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+									SDL_FreeSurface(text);
+									sprintf(tmp, "%s%d",note[pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]-((pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]/12)*12)],pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]/12-2);
+									text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+8+2*text->h;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+								}
+								if(pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][0]==3)
+								{
+									boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0xFF8F8FFF);
+									SDL_FreeSurface(text);
+									text = TTF_RenderText_Blended(fontextrasmall, "Note", blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+4;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+									SDL_FreeSurface(text);
+									text = TTF_RenderText_Blended(fontextrasmall, "Off", blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+6+text->h;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+									SDL_FreeSurface(text);
+									sprintf(tmp, "%s%d",note[pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]-((pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]/12)*12)],pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]/12-2);
+									text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+8+2*text->h;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+								}
+								if(pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][0]==4)
+								{
+									boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x8F8FFFFF);
+									SDL_FreeSurface(text);
+									text = TTF_RenderText_Blended(fontextrasmall, "Program", blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+4;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+									SDL_FreeSurface(text);
+									text = TTF_RenderText_Blended(fontextrasmall, "Change", blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+6+text->h;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+									SDL_FreeSurface(text);
+									sprintf(tmp, "%d",pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]+1);
+									text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+8+2*text->h;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+								}
+								if(pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][0]==5)
+								{
+									boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0xFF8FFFFF);
+									SDL_FreeSurface(text);
+									text = TTF_RenderText_Blended(fontextrasmall, "CC", blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+4;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+									SDL_FreeSurface(text);
+									sprintf(tmp, "%d",pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]);
+									text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+6+text->h;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+									sprintf(tmp, "%d",pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][2]);
+									text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+8+2*text->h;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+								}
 							}
-							if(pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][0]==2)
+							else if (selpattern[selpattdevice-seite2]==-1 and i==0)
 							{
-								boxColor(screen, 4*scorex+(2*i)*scorex+3,5*scorey+(2*j)*scorey-3-(((2*scorey-6)*pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][2])/127),6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x8FFF8FFF);
-								SDL_FreeSurface(text);
-								text = TTF_RenderText_Blended(fontextrasmall, "Note", blackColor);
-								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
-								textPosition.y = 3*scorey+(2*j)*scorey+4;
-								SDL_BlitSurface(text, 0, screen, &textPosition);
-								SDL_FreeSurface(text);
-								text = TTF_RenderText_Blended(fontextrasmall, "On", blackColor);
-								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
-								textPosition.y = 3*scorey+(2*j)*scorey+6+text->h;
-								SDL_BlitSurface(text, 0, screen, &textPosition);
-								SDL_FreeSurface(text);
-								sprintf(tmp, "%s%d",note[pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]-((pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]/12)*12)],pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]/12-2);
-								text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
-								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
-								textPosition.y = 3*scorey+(2*j)*scorey+8+2*text->h;
-								SDL_BlitSurface(text, 0, screen, &textPosition);
-							}
-							if(pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][0]==3)
-							{
-								boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0xFF8F8FFF);
-								SDL_FreeSurface(text);
-								text = TTF_RenderText_Blended(fontextrasmall, "Note", blackColor);
-								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
-								textPosition.y = 3*scorey+(2*j)*scorey+4;
-								SDL_BlitSurface(text, 0, screen, &textPosition);
-								SDL_FreeSurface(text);
-								text = TTF_RenderText_Blended(fontextrasmall, "Off", blackColor);
-								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
-								textPosition.y = 3*scorey+(2*j)*scorey+6+text->h;
-								SDL_BlitSurface(text, 0, screen, &textPosition);
-								SDL_FreeSurface(text);
-								sprintf(tmp, "%s%d",note[pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]-((pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]/12)*12)],pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]/12-2);
-								text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
-								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
-								textPosition.y = 3*scorey+(2*j)*scorey+8+2*text->h;
-								SDL_BlitSurface(text, 0, screen, &textPosition);
-							}
-							if(pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][0]==4)
-							{
-								boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x8F8FFFFF);
-								SDL_FreeSurface(text);
-								text = TTF_RenderText_Blended(fontextrasmall, "Program", blackColor);
-								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
-								textPosition.y = 3*scorey+(2*j)*scorey+4;
-								SDL_BlitSurface(text, 0, screen, &textPosition);
-								SDL_FreeSurface(text);
-								text = TTF_RenderText_Blended(fontextrasmall, "Change", blackColor);
-								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
-								textPosition.y = 3*scorey+(2*j)*scorey+6+text->h;
-								SDL_BlitSurface(text, 0, screen, &textPosition);
-								SDL_FreeSurface(text);
-								sprintf(tmp, "%d",pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]+1);
-								text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
-								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
-								textPosition.y = 3*scorey+(2*j)*scorey+8+2*text->h;
-								SDL_BlitSurface(text, 0, screen, &textPosition);
-							}
-							if(pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][0]==5)
-							{
-								boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0xFF8FFFFF);
-								SDL_FreeSurface(text);
-								text = TTF_RenderText_Blended(fontextrasmall, "CC", blackColor);
-								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
-								textPosition.y = 3*scorey+(2*j)*scorey+4;
-								SDL_BlitSurface(text, 0, screen, &textPosition);
-								SDL_FreeSurface(text);
-								sprintf(tmp, "%d",pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][1]);
-								text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
-								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
-								textPosition.y = 3*scorey+(2*j)*scorey+6+text->h;
-								SDL_BlitSurface(text, 0, screen, &textPosition);
-								sprintf(tmp, "%d",pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][i][j][2]);
-								text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
-								textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
-								textPosition.y = 3*scorey+(2*j)*scorey+8+2*text->h;
-								SDL_BlitSurface(text, 0, screen, &textPosition);
+								if(startpattern[selpattdevice-seite2][j][0]==4)
+								{
+									boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0x8F8FFFFF);
+									SDL_FreeSurface(text);
+									text = TTF_RenderText_Blended(fontextrasmall, "Program", blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+4;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+									SDL_FreeSurface(text);
+									text = TTF_RenderText_Blended(fontextrasmall, "Change", blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+6+text->h;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+									SDL_FreeSurface(text);
+									sprintf(tmp, "%d",startpattern[selpattdevice-seite2][j][1]+1);
+									text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+8+2*text->h;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+								}
+								if(startpattern[selpattdevice-seite2][j][0]==5 and i==0)
+								{
+									boxColor(screen, 4*scorex+(2*i)*scorex+3,3*scorey+(2*j)*scorey+3,6*scorex+(2*i)*scorex-3,5*scorey+(2*j)*scorey-3,0xFF8FFFFF);
+									SDL_FreeSurface(text);
+									text = TTF_RenderText_Blended(fontextrasmall, "CC", blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+4;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+									SDL_FreeSurface(text);
+									sprintf(tmp, "%d",startpattern[selpattdevice-seite2][j][1]);
+									text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+6+text->h;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+									sprintf(tmp, "%d",startpattern[selpattdevice-seite2][j][2]);
+									text = TTF_RenderText_Blended(fontextrasmall, tmp, blackColor);
+									textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+									textPosition.y = 3*scorey+(2*j)*scorey+8+2*text->h;
+									SDL_BlitSurface(text, 0, screen, &textPosition);
+								}
 							}
 						}
 					}
@@ -4370,7 +4486,7 @@ int main(int argc, char* argv[])
 									int j = int((mousex/scorex-4)/2);
 									seleditstep = j;
 									seleditcommand = i;
-									
+
 									if(selpattern[selpattdevice-seite2]>=0)
 									{
 //										if(pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]>0)
@@ -4445,15 +4561,21 @@ int main(int argc, char* argv[])
 									{
 										if(clear.aktiv==true and edit.aktiv==true and seleditstep==0)
 										{
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=0;
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=0;
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=0;
+											startpattern[selpattdevice-seite2][seleditcommand][0]=0;
+											startpattern[selpattdevice-seite2][seleditcommand][1]=0;
+											startpattern[selpattdevice-seite2][seleditcommand][2]=0;
 										}
 										else if(program.aktiv==true and edit.aktiv==true and seleditstep==0)
 										{
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=4;
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][1]=akteditprogram;
-											pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][2]=0;
+											startpattern[selpattdevice-seite2][seleditcommand][0]=4;
+											startpattern[selpattdevice-seite2][seleditcommand][1]=akteditprogram;
+											startpattern[selpattdevice-seite2][seleditcommand][2]=0;
+										}
+										else if(ccbutton.aktiv==true and edit.aktiv==true and seleditstep==0)
+										{
+											startpattern[selpattdevice-seite2][seleditcommand][0]=5;
+											startpattern[selpattdevice-seite2][seleditcommand][1]=akteditccb1;
+											startpattern[selpattdevice-seite2][seleditcommand][2]=akteditccb2;
 										}
 									}
 								}
