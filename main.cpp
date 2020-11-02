@@ -262,6 +262,21 @@ public:
 		return;
 	}
 
+	void Controller(int mididevice, char data1, char data2)
+	{
+		vector<unsigned char> message;
+
+		if(aset[mididevice].mididevice<onPorts)
+		{
+			message.clear();
+			message.push_back(176+aset[mididevice].midichannel);
+			message.push_back(data1);
+			message.push_back(data2);
+			midioutdevices[mididevice]->sendMessage( &message );
+		}
+		return;
+	}
+
 	void ArturiaBankChange(int mididevice, int bank)
 	{
 		vector<unsigned char> message;
@@ -401,6 +416,17 @@ public:
 					else
 					{
 						ProgramChange(i+1, startpattern[i][j][1]);
+					}
+				}
+				else if(startpattern[i][j][0]==5)
+				{
+					if(i<5)
+					{
+						Controller(i, startpattern[i][j][1], startpattern[i][j][2]);
+					}
+					else
+					{
+						Controller(i+1, startpattern[i][j][1], startpattern[i][j][2]);
 					}
 				}
 			}
@@ -575,6 +601,10 @@ public:
 			if(pattern[aktdev][selpattern[aktdev]][step][i][0]==4)
 			{
 				ProgramChange(aktdev2, pattern[aktdev][selpattern[aktdev]][step][i][1]);
+			}
+			if(pattern[aktdev][selpattern[aktdev]][step][i][0]==5)
+			{
+				Controller(aktdev2, pattern[aktdev][selpattern[aktdev]][step][i][1], pattern[aktdev][selpattern[aktdev]][step][i][2]);
 			}
 		}
 	}
