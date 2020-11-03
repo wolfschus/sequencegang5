@@ -552,10 +552,10 @@ public:
 			  }
 			  else
 			  {
-				  for(int i=0;i<10;i++)
-				  {
-					  MidiCommand(i, aktstep);
-				  }
+				for(int i=0;i<10;i++)
+				{
+					MidiCommand(i, aktstep);
+				}
 			  }
 		  }
 		if(clockmodemaster==true and playmode==1)
