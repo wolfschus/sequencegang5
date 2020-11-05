@@ -1536,6 +1536,20 @@ int main(int argc, char* argv[])
 	}
 	sqlite3_close(settingsdb);
 	
+	
+// Debug
+	cout << "----------------------------------------------------" << endl;
+	cout << "Settings:" << endl;
+	cout << "Device\tMididevice\tMidichannel" << endl;
+
+	for(int i=0; i<12; i++)
+	{
+		cout << aset[i].name << "\t" << aset[i].mididevice << "\t" << aset[i].midichannel << endl;
+	}
+	cout << "----------------------------------------------------" << endl;
+
+// Debug
+	
 	sprintf(songpath, "%s/Documents/Sequencegang5/songs.seq5", getenv("HOME"));
 
 	int aktbank[10] = {0,0,0,0,0,0,0,0,0,0};
