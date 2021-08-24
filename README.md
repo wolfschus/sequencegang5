@@ -32,6 +32,7 @@ make
 To install:
 
 cp db/sequencegang5.settings ~/.sequencegang5.settings
+
 mkdir ~/Documents/Sequencegang5
 
 cp db/songs.seq5 ~/Documents/Sequencegang5
