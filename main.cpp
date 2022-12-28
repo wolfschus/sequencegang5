@@ -200,6 +200,7 @@ struct moutdev{
 
 vector <moutdev> midioutdev;
 moutdev moutdevtmp;
+sqlite3 *settingsdb;
 
 RtMidiOut *midioutdevices[10];
 	
@@ -1343,6 +1344,43 @@ void CheckMidiInPorts()
 	}
 }
 
+void LoadSettingsDB()
+{
+	// Load SettingsDB
+	sprintf(dbpath, "%s/.sequencegang5.settings", getenv("HOME"));
+	if(sqlite3_open(dbpath, &settingsdb) != SQLITE_OK)
+	{
+		cout << "Fehler beim Öffnen: " << sqlite3_errmsg(settingsdb) << endl;
+		return;
+	}
+	cout << "Settingsdatenbank erfolgreich geöffnet!" << endl;
+	sprintf(sql, "SELECT * FROM settings");
+	if( sqlite3_exec(settingsdb,sql,settingscallback,0,0) != SQLITE_OK)
+	{
+		cout << "Fehler beim SELECT: " << sqlite3_errmsg(settingsdb) << endl;
+		return;
+	}
+	sprintf(sql, "SELECT * FROM MidiInCtrl");
+	if( sqlite3_exec(settingsdb,sql,midiinsettingscallback,0,0) != SQLITE_OK)
+	{
+		cout << "Fehler beim SELECT: " << sqlite3_errmsg(settingsdb) << endl;
+		return;
+	}
+	sqlite3_close(settingsdb);
+// Debug
+	cout << "----------------------------------------------------" << endl;
+	cout << "Settings:" << endl;
+	cout << "Device\t\tMididevice\t\tMidichannel" << endl;
+
+	for(int i=0; i<12; i++)
+	{
+		cout << aset[i].name << "\t\t" << aset[i].mididevice << "\t\t" << aset[i].midichannel << endl;
+	}
+	cout << "----------------------------------------------------" << endl;
+
+// Debug
+	
+}
 
 int main(int argc, char* argv[])
 {
@@ -1517,42 +1555,7 @@ int main(int argc, char* argv[])
 
 	char tmp[256];
 
-	// Load SettingsDB
-	sprintf(dbpath, "%s/.sequencegang5.settings", getenv("HOME"));
-	sqlite3 *settingsdb;
-	if(sqlite3_open(dbpath, &settingsdb) != SQLITE_OK)
-	{
-		cout << "Fehler beim Öffnen: " << sqlite3_errmsg(settingsdb) << endl;
-		return 1;
-	}
-	cout << "Settingsdatenbank erfolgreich geöffnet!" << endl;
-	sprintf(sql, "SELECT * FROM settings");
-	if( sqlite3_exec(settingsdb,sql,settingscallback,0,0) != SQLITE_OK)
-	{
-		cout << "Fehler beim SELECT: " << sqlite3_errmsg(settingsdb) << endl;
-		return 1;
-	}
-	sprintf(sql, "SELECT * FROM MidiInCtrl");
-	if( sqlite3_exec(settingsdb,sql,midiinsettingscallback,0,0) != SQLITE_OK)
-	{
-		cout << "Fehler beim SELECT: " << sqlite3_errmsg(settingsdb) << endl;
-		return 1;
-	}
-	sqlite3_close(settingsdb);
-	
-	
-// Debug
-	cout << "----------------------------------------------------" << endl;
-	cout << "Settings:" << endl;
-	cout << "Device\t\tMididevice\t\tMidichannel" << endl;
-
-	for(int i=0; i<12; i++)
-	{
-		cout << aset[i].name << "\t\t" << aset[i].mididevice << "\t\t" << aset[i].midichannel << endl;
-	}
-	cout << "----------------------------------------------------" << endl;
-
-// Debug
+	LoadSettingsDB();	
 	
 	sprintf(songpath, "%s/Documents/Sequencegang5/songs.seq5", getenv("HOME"));
 
@@ -4725,6 +4728,8 @@ int main(int argc, char* argv[])
 									}
 									sqlite3_close(settingsdb);
 									changesettings=false;
+									LoadSettingsDB();
+									
 								}
 								CloseMidiOutPorts();
 								CheckMidiOutPorts();
