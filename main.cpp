@@ -1,7 +1,7 @@
 //============================================================================
 // Name        : Sequencegang5.cpp
 // Author      : Wolfgang Schuster
-// Version     : 1.22 02.11.2020
+// Version     : 1.3 28.12.2022
 // Copyright   : Wolfgang Schuster
 // Description : MIDI-Sequencer for Linux/Raspberry PI
 // License     : GNU General Public License v3.0
@@ -855,7 +855,7 @@ static int songpatternnamecallback(void* data, int argc, char** argv, char** azC
 void midiincallback( double deltatime, std::vector< unsigned char > *message, void *userData )
 {
 	unsigned int nBytes = message->size();
-//	cout << "MidiIn: ";
+	cout << "MidiIn: ";
 
 	for(unsigned int i=0;i<nBytes;i++)
 	{
@@ -901,7 +901,11 @@ void midiincallback( double deltatime, std::vector< unsigned char > *message, vo
 			}
 			if((int)message->at(0)==144)
 			{
-				wsmidi.NoteOn(selpattdevice-seite2,(int)message->at(1),(int)message->at(2));
+				wsmidi.NoteOn(selpattdevice,(int)message->at(1),(int)message->at(2));
+				//Debug
+				cout << "\n" << selpattdevice;
+				cout << " : " << (int)message->at(1) << " : " << (int)message->at(2) << "\n";
+				//Debug
 				if(isediton==true)
 				{
 					pattern[selpattdevice-seite2][selpattern[selpattdevice-seite2]][seleditstep][seleditcommand][0]=2;
@@ -923,7 +927,7 @@ void midiincallback( double deltatime, std::vector< unsigned char > *message, vo
 			}
 			if((int)message->at(0)==128)
 			{
-				wsmidi.NoteOff(selpattdevice-seite2,(int)message->at(1));
+				wsmidi.NoteOff(selpattdevice,(int)message->at(1));
 			}
 		}
 
@@ -1279,16 +1283,16 @@ void CheckMidiOutPorts()
 			midioutdevices[i]->openPort(0, aset[i].name.c_str());
 		}
 	}
-	for(int i=5;i<10;i++)
+	for(int i=5;i<11;i++)
 	{
-		midioutdevices[i] = new RtMidiOut(RtMidi::UNSPECIFIED, aset[i+1].name.c_str());
-		if(aset[i+1].mididevice<onPorts)
+		midioutdevices[i] = new RtMidiOut(RtMidi::UNSPECIFIED, aset[i].name.c_str());
+		if(aset[i].mididevice<onPorts)
 		{
-			midioutdevices[i]->openPort(aset[i+1].mididevice, aset[i+1].name.c_str());
+			midioutdevices[i]->openPort(aset[i].mididevice, aset[i].name.c_str());
 		}
 		else if(aset[i].mididevice==256)
 		{
-			midioutdevices[i]->openPort(0, aset[i+1].name.c_str());
+			midioutdevices[i]->openPort(0, aset[i].name.c_str());
 		}
 	}
 
@@ -1362,7 +1366,7 @@ int main(int argc, char* argv[])
 		if(string(argv[i])=="--help")
 		{
 			cout << "Sequencegang5" << endl;
-			cout << "(c) 1987 - 2020 by Wolfgang Schuster" << endl;
+			cout << "(c) 1987 - 2023 by Wolfgang Schuster" << endl;
 			cout << "sequencegang5 --fullscreen = fullscreen" << endl;
 			cout << "sequencegang5 --debug = debug" << endl;
 			cout << "sequencegang5 --help = this screen" << endl;
@@ -1540,11 +1544,11 @@ int main(int argc, char* argv[])
 // Debug
 	cout << "----------------------------------------------------" << endl;
 	cout << "Settings:" << endl;
-	cout << "Device\tMididevice\tMidichannel" << endl;
+	cout << "Device\t\tMididevice\t\tMidichannel" << endl;
 
 	for(int i=0; i<12; i++)
 	{
-		cout << aset[i].name << "\t" << aset[i].mididevice << "\t" << aset[i].midichannel << endl;
+		cout << aset[i].name << "\t\t" << aset[i].mididevice << "\t\t" << aset[i].midichannel << endl;
 	}
 	cout << "----------------------------------------------------" << endl;
 
@@ -2587,7 +2591,7 @@ int main(int argc, char* argv[])
 			if(mode==1) // Info
 			{
 				SDL_FreeSurface(text);
-				text = TTF_RenderText_Blended(fontbold, "(c) 1987-2020 by Wolfgang Schuster", textColor);
+				text = TTF_RenderText_Blended(fontbold, "(c) 1987-2023 by Wolfgang Schuster", textColor);
 				textPosition.x = screen->w/2-text->w/2;
 				textPosition.y = 2*scorey;
 				SDL_BlitSurface(text, 0, screen, &textPosition);
