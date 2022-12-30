@@ -169,6 +169,8 @@ int vmpk_in = -1;
 int beatstep_out = -1;
 int launchkeymini_in = -1;
 
+int controleditmode = 0; // 2 - BPM, 1 - STOP, 0 - Clear
+
 DIR *dir;
 struct dirent *ent;
 vector<string> directory;
@@ -904,8 +906,8 @@ void midiincallback( double deltatime, std::vector< unsigned char > *message, vo
 			{
 				wsmidi.NoteOn(selpattdevice,(int)message->at(1),(int)message->at(2));
 				//Debug
-				cout << "\n" << selpattdevice;
-				cout << " : " << (int)message->at(1) << " : " << (int)message->at(2) << "\n";
+//				cout << "\n" << selpattdevice;
+//				cout << " : " << (int)message->at(1) << " : " << (int)message->at(2) << "\n";
 				//Debug
 				if(isediton==true)
 				{
@@ -1669,6 +1671,7 @@ int main(int argc, char* argv[])
 	WSButton songstepfb(14,19,2,2,scorex,scorey,left_image,"");
 	WSButton songstep10fb(12,19,2,2,scorex,scorey,first_image,"");
 	WSButton plusbpm(22,17,2,2,scorex,scorey,plus_image,"");
+	WSButton minusbpm(22,19,2,2,scorex,scorey,minus_image,"");
 	WSButton top(34,17,2,2,scorex,scorey,top_image,"");
 	WSButton bottom(34,17,2,2,scorex,scorey,bottom_image,"");
 	WSButton clock(10,19,2,2,scorex,scorey,clock_image,"");
@@ -1683,6 +1686,12 @@ int main(int argc, char* argv[])
 	WSButton ccb2down(26,17,2,2,scorex,scorey,left_image,"");
 	WSButton ccb210up(32,17,2,2,scorex,scorey,last_image,"");
 	WSButton ccb210down(24,17,2,2,scorex,scorey,first_image,"");
+
+	SDL_Rect controledit_rect;
+	controledit_rect.x = 22*scorex+3;
+	controledit_rect.y = 19*scorey+3;
+	controledit_rect.w = 2*scorex-6;
+	controledit_rect.h = 2*scorey-6;
 
 	songpattern.aktiv=true;
 	songpattern.selected=true;
@@ -2351,6 +2360,60 @@ int main(int argc, char* argv[])
 						if(selpattdevice==11)
 						{
 							plusbpm.show(screen, fontsmall);
+							//minusbpm.show(screen, fontsmall);
+							
+							
+/*							if(controleditmode==0) {
+								boxColor(screen, 4*scorex+(2*9)*scorex+3,3*scorey+(2*8)*scorey+3,6*scorex+(2*9)*scorex-3,5*scorey+(2*8)*scorey-3,0x8F8F8FFF);
+							} else {
+								boxColor(screen, 4*scorex+(2*9)*scorex+3,3*scorey+(2*8)*scorey+3,6*scorex+(2*9)*scorex-3,5*scorey+(2*8)*scorey-3,0x8F0000FF); //0x8F8F8FFF);
+							}
+*/							
+							
+							if(controleditmode==0)
+							{
+								boxColor(screen, 4*scorex+(2*9)*scorex+3,4*scorey+(15)*scorey+3,6*scorex+(2*9)*scorex-3,6*scorey+(15)*scorey-3,0x8F8F8FFF);							
+							}
+							else if(controleditmode==3)
+							{
+								boxColor(screen, 4*scorex+(2*9)*scorex+3,4*scorey+(15)*scorey+3,6*scorex+(2*9)*scorex-3,6*scorey+(15)*scorey-3,0x8FFF8FFF);
+								SDL_FreeSurface(text);
+								text = TTF_RenderText_Blended(fontsmall, "BPM", blackColor);
+								textPosition.x = 5*scorex+(2*9)*scorex-text->w/2;
+								textPosition.y = 4*scorey+(15)*scorey+text->h/2+2;
+								SDL_BlitSurface(text, 0, screen, &textPosition);
+							}
+							else if(controleditmode==1)
+							{
+								boxColor(screen, 4*scorex+(2*9)*scorex+3,4*scorey+(15)*scorey+3,6*scorex+(2*9)*scorex-3,6*scorey+(15)*scorey-3,unsigned(0xFFF8F8FFF));
+								SDL_FreeSurface(text);
+								text = TTF_RenderText_Blended(fontsmall, "STOP", blackColor);
+								textPosition.x = 5*scorex+(2*9)*scorex-text->w/2;
+								textPosition.y = 4*scorey+(15)*scorey+text->h/2+2;
+								SDL_BlitSurface(text, 0, screen, &textPosition);
+							}
+							else if(controleditmode==2)
+							{
+								boxColor(screen, 4*scorex+(2*9)*scorex+4,4*scorey+(15)*scorey+3,6*scorex+(2*9)*scorex-3,6*scorey+(15)*scorey-3,unsigned(0xFFF8F8FFF));
+								SDL_FreeSurface(text);
+								text = TTF_RenderText_Blended(fontextrasmall, "All Notes", blackColor);
+								textPosition.x = 5*scorex+(2*9)*scorex-text->w/2;
+								textPosition.y = 4*scorey+(15)*scorey+text->h/2+2;
+								SDL_BlitSurface(text, 0, screen, &textPosition);
+								SDL_FreeSurface(text);
+								text = TTF_RenderText_Blended(fontextrasmall, "OFF", blackColor);
+								textPosition.x = 5*scorex+(2*9)*scorex-text->w/2;
+								textPosition.y = 4.5*scorey+(15)*scorey+text->h/2+2;
+								SDL_BlitSurface(text, 0, screen, &textPosition);
+							}
+						
+							
+							
+							
+							
+							
+							
+							
 						}
 					}
 
@@ -4072,7 +4135,19 @@ int main(int argc, char* argv[])
 										if(CheckMouse(mousex, mousey, plusbpm.button_rect)==true)
 										{
 											plusbpm.aktiv=true;
-											songpatt[10][aktsongstep]=bpm;
+											if(controleditmode==3) {
+												songpatt[10][aktsongstep]=bpm;
+											} else {
+												songpatt[10][aktsongstep]=controleditmode;
+											}
+										}
+										if(CheckMouse(mousex, mousey, controledit_rect)==true)
+										{
+											controleditmode ++;
+											if(controleditmode>3) {
+												controleditmode=0;
+											}
+											cout << "\nClick Controledit " << controleditmode << "\n";
 										}
 									}
 								}
