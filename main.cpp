@@ -1145,6 +1145,7 @@ bool LoadSongDB()
 		return 1;
 	}
 	sqlite3_close(songsdb);
+
 	return true;
 }
 
@@ -1717,7 +1718,7 @@ int main(int argc, char* argv[])
 
 	for(int i=0;i<4;i++)
 	{
-		for(int j=0;j<4;j++)
+		for(int j=0;j<6;j++)
 		{
 			sprintf(tmp, "%d %s", ((i+1)+4*j), "test");
 			WSButton tmp1(1+9*i,5+(2*j),8,2,scorex,scorey,NULL,tmp);
@@ -1890,6 +1891,15 @@ int main(int argc, char* argv[])
 				patterndevicenamePosition.h = scorey;
 				patterndevicenamePosition.w = 10*scorex;
 
+				if(submode==2 && (playmode==1 || playmode==2))
+				{
+					text = TTF_RenderText_Blended(fontsmall, "Time", textColor);
+					patterndevicenamePosition.x = 8*scorex;
+					patterndevicenamePosition.y = 0.75*scorey-text->h/2;
+					SDL_BlitSurface(text, 0, screen, &patterndevicenamePosition);
+					patterndevicenamePosition.h = scorey;
+				}
+				
 // CPU und RAM
 				boxColor(screen, 0.2*scorex,0.25*scorey,0.4*scorex,1.25*scorey,0x2F2F2FFF);
 				if(cpuusage>90)
@@ -2933,7 +2943,7 @@ int main(int argc, char* argv[])
 				textPosition.y = 2*scorey;
 				SDL_BlitSurface(text, 0, screen, &textPosition);
 
-				for(int i=0;i<16;i++)
+				for(int i=0;i<24;i++)
 				{
 					load_song[i].show(screen, fontsmall);
 				}
@@ -2951,7 +2961,7 @@ int main(int argc, char* argv[])
 				textPosition.y = 2*scorey;
 				SDL_BlitSurface(text, 0, screen, &textPosition);
 
-				for(int i=0;i<16;i++)
+				for(int i=0;i<24;i++)
 				{
 					load_song[i].show(screen, fontsmall);
 				}
@@ -3108,7 +3118,7 @@ int main(int argc, char* argv[])
 						else if(mode==4 or mode==6)
 						{
 							isselected=-1;
-							for(int i=0;i<16;i++)
+							for(int i=0;i<24;i++)
 							{
 								if(load_song[i].aktiv==true)
 								{
@@ -3119,7 +3129,7 @@ int main(int argc, char* argv[])
 							{
 								load_song[0].aktiv=true;
 							}
-							else if(isselected<16)
+							else if(isselected<24)
 							{
 								load_song[isselected].aktiv=false;
 								load_song[isselected+1].aktiv=true;
@@ -3194,7 +3204,7 @@ int main(int argc, char* argv[])
 						else if(mode==4 or mode==6)
 						{
 							isselected=-1;
-							for(int i=0;i<16;i++)
+							for(int i=0;i<24;i++)
 							{
 								if(load_song[i].aktiv==true)
 								{
@@ -3561,14 +3571,14 @@ int main(int argc, char* argv[])
 								{
 									LoadSongDB();
 
-									for(int i=0;i<16;i++)
+									for(int i=0;i<24;i++)
 									{
 										load_song[i].button_text = songset[i].name;
 									}
 
 									if(aktsong>0)
 									{
-										for(int i=0;i<16;i++)
+										for(int i=0;i<24;i++)
 										{
 											load_song[i].aktiv=false;
 											if(i+1==aktsong)
@@ -3583,7 +3593,7 @@ int main(int argc, char* argv[])
 								{
 									LoadSongDB();
 
-									for(int i=0;i<16;i++)
+									for(int i=0;i<24;i++)
 									{
 										load_song[i].button_text = songset[i].name;
 									}
@@ -3602,7 +3612,7 @@ int main(int argc, char* argv[])
 						}
 						else if(mode==4)
 						{
-							for(int i=0;i<16;i++)
+							for(int i=0;i<24;i++)
 							{
 								if(load_song[i].aktiv==true)
 								{
@@ -3614,7 +3624,7 @@ int main(int argc, char* argv[])
 						else if(mode==6)
 						{
 							{
-			        			for(int i=0;i<16;i++)
+			        			for(int i=0;i<24;i++)
 			        			{
 			        				if(load_song[i].aktiv==true)
 			        				{
@@ -3803,14 +3813,14 @@ int main(int argc, char* argv[])
 							{
 								LoadSongDB();
 
-								for(int i=0;i<16;i++)
+								for(int i=0;i<24;i++)
 								{
 									load_song[i].button_text = songset[i].name;
 								}
 
 								if(aktsong>0)
 								{
-									for(int i=0;i<16;i++)
+									for(int i=0;i<24;i++)
 									{
 										load_song[i].aktiv=false;
 										if(i+1==aktsong)
@@ -3825,7 +3835,7 @@ int main(int argc, char* argv[])
 							{
 								LoadSongDB();
 
-								for(int i=0;i<16;i++)
+								for(int i=0;i<24;i++)
 								{
 									load_song[i].button_text = songset[i].name;
 								}
@@ -5098,7 +5108,7 @@ int main(int argc, char* argv[])
 							}
 							if(CheckMouse(mousex, mousey, ok.button_rect)==true)
 							{
-								for(int i=0;i<16;i++)
+								for(int i=0;i<24;i++)
 								{
 									if(load_song[i].aktiv==true)
 									{
@@ -5111,7 +5121,7 @@ int main(int argc, char* argv[])
 							{
 								mode=0;
 							}
-							for(int i=0;i<16;i++)
+							for(int i=0;i<24;i++)
 							{
 								load_song[i].aktiv=false;
 								if(CheckMouse(mousex, mousey, load_song[i].button_rect)==true)
@@ -5136,7 +5146,7 @@ int main(int argc, char* argv[])
 			        	{
 			        		if(CheckMouse(mousex, mousey, ok.button_rect)==true)
 							{
-			        			for(int i=0;i<16;i++)
+			        			for(int i=0;i<24;i++)
 			        			{
 			        				if(load_song[i].aktiv==true)
 			        				{
@@ -5153,7 +5163,7 @@ int main(int argc, char* argv[])
 							{
 								mode=0;
 							}
-							for(int i=0;i<16;i++)
+							for(int i=0;i<24;i++)
 							{
 								load_song[i].aktiv=false;
 								if(CheckMouse(mousex, mousey, load_song[i].button_rect)==true)
