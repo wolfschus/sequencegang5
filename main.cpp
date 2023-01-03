@@ -117,6 +117,7 @@ int aktsongstep=0;
 int oldstep=0;
 int miditick=5;
 int oldmiditick=0;
+int alltick=0;
 int timedivision=16;
 int maxstep = 15;
 int bpm = 60;
@@ -452,6 +453,7 @@ public:
 		playmode=0;
 		timerrun=false;
 		aktstep=15;
+		alltick=0;
 		if(clockmodemaster==true and playmode==1)
 		{
 			Clock_Stop(aset[11].mididevice);
@@ -471,6 +473,7 @@ public:
 	void NextTick(bool isinput)
 	{
 		oldmiditick=miditick;
+		alltick++;
 		if(miditick<5 and isinput==false)
 		{
 			miditick++;
@@ -1400,6 +1403,7 @@ int main(int argc, char* argv[])
 
 	bool debug=false;
 	bool fullscreen=false;
+	bool renoise=false;
 	
 	// Argumentverarbeitung
 	for (int i = 0; i < argc; ++i)
@@ -1421,6 +1425,10 @@ int main(int argc, char* argv[])
 		if(string(argv[i])=="--debug")
 		{
 			debug=true;
+		}
+		if(string(argv[i])=="--renoise")
+		{
+			renoise=true;
 		}
 	}
 
@@ -1470,6 +1478,12 @@ int main(int argc, char* argv[])
 	}
 	TTF_Font* fontsmall = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16);
 	if(!fontsmall)
+	{
+	    std::cerr << "Konnte Schriftart nicht laden! Fehler: " << TTF_GetError() << std::endl;
+	    return -1;
+	}
+	TTF_Font* fontverysmall = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 8);
+	if(!fontverysmall)
 	{
 	    std::cerr << "Konnte Schriftart nicht laden! Fehler: " << TTF_GetError() << std::endl;
 	    return -1;
@@ -1893,7 +1907,8 @@ int main(int argc, char* argv[])
 
 				if(submode==2 && (playmode==1 || playmode==2))
 				{
-					text = TTF_RenderText_Blended(fontsmall, "Time", textColor);
+					sprintf(tmp, "%02d:%02d",((alltick*10/(bpm+60)/4)-((alltick*10/(bpm+60)/4)/3600)*3600)/60,(alltick*10/(bpm+60)/4)%60);
+					text = TTF_RenderText_Blended(fontsmall, tmp, textColor);
 					patterndevicenamePosition.x = 8*scorex;
 					patterndevicenamePosition.y = 0.75*scorey-text->h/2;
 					SDL_BlitSurface(text, 0, screen, &patterndevicenamePosition);
@@ -1978,6 +1993,16 @@ int main(int argc, char* argv[])
 					textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
 					textPosition.y = 3*scorey-text->h;
 					SDL_BlitSurface(text, 0, screen, &textPosition);
+
+// Migrate from Renoise	
+					if(renoise==true) {
+						sprintf(tmp, "%d",(aktsongstep/16+aktsongstep/16*15+i)/2);
+						text = TTF_RenderText_Blended(fontverysmall, tmp, textColor);
+						textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
+						textPosition.y = 2.35*scorey-text->h;
+						SDL_BlitSurface(text, 0, screen, &textPosition);
+					}
+					
 
 // Pattern Raster
 					if(submode==0)
@@ -3829,11 +3854,19 @@ int main(int argc, char* argv[])
 										}
 									}
 								}
+								aktsongstep=0;
 								mode=4;
 							}
 							else if(CheckMouse(mousex, mousey, save.button_rect)==true)
 							{
 								LoadSongDB();
+								
+								for(int i=0;i<24;i++)
+								{
+									if(load_song[i].button_text==songname) {
+										load_song[i].aktiv=true;
+									}
+								}
 
 								for(int i=0;i<24;i++)
 								{
