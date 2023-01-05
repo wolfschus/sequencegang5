@@ -1996,6 +1996,7 @@ int main(int argc, char* argv[])
 
 // Migrate from Renoise	
 					if(renoise==true) {
+						SDL_FreeSurface(text);
 						sprintf(tmp, "%d",(aktsongstep/16+aktsongstep/16*15+i)/2);
 						text = TTF_RenderText_Blended(fontverysmall, tmp, textColor);
 						textPosition.x = 5*scorex+(2*i)*scorex-text->w/2;
